@@ -10,6 +10,25 @@ import { app } from 'electron'
 import { join } from 'path'
 import { existsSync, readdirSync } from 'fs'
 
+/** Recursively search for a file by name, optionally requiring a parent directory name. */
+function findFileRecursive(dir: string, filename: string, parentHint?: string, depth = 0): string | undefined {
+  if (depth > 8) return undefined
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name)
+      if (entry.isFile() && entry.name === filename) {
+        if (!parentHint || dir.includes(parentHint)) return fullPath
+      }
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        const found = findFileRecursive(fullPath, filename, parentHint, depth + 1)
+        if (found) return found
+      }
+    }
+  } catch { /* permission errors etc */ }
+  return undefined
+}
+
 /** Locate the Chromium executable, checking bundled location first. */
 function findChromiumPath(): string | undefined {
   // In production: Chromium is bundled in extraResources/playwright-browsers/
@@ -17,36 +36,19 @@ function findChromiumPath(): string | undefined {
   const bundledDir = join(resourcesPath, 'playwright-browsers')
 
   if (existsSync(bundledDir)) {
-    // Find the chromium directory (e.g. chromium-1208)
-    const entries = readdirSync(bundledDir).filter(e => e.startsWith('chromium'))
-    if (entries.length > 0) {
-      const chromiumDir = join(bundledDir, entries[0])
-
-      // Platform-specific executable paths
-      if (process.platform === 'darwin') {
-        // Try arm64 first, then x64
-        const paths = [
-          join(chromiumDir, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
-          join(chromiumDir, 'chrome-mac', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
-          join(chromiumDir, 'chrome-mac-x64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
-        ]
-        for (const p of paths) {
-          if (existsSync(p)) return p
-        }
-      } else if (process.platform === 'win32') {
-        const winPath = join(chromiumDir, 'chrome-win64', 'chrome.exe')
-        if (existsSync(winPath)) return winPath
-        const winPath2 = join(chromiumDir, 'chrome-win', 'chrome.exe')
-        if (existsSync(winPath2)) return winPath2
-      } else {
-        const linuxPath = join(chromiumDir, 'chrome-linux64', 'chrome')
-        if (existsSync(linuxPath)) return linuxPath
-        const linuxPath2 = join(chromiumDir, 'chrome-linux', 'chrome')
-        if (existsSync(linuxPath2)) return linuxPath2
-      }
-
-      console.log('[Playwright] Bundled chromium dir found but no executable:', chromiumDir)
+    // Search recursively for the executable in the bundled directory
+    if (process.platform === 'darwin') {
+      const macExecutable = findFileRecursive(bundledDir, 'Google Chrome for Testing', 'MacOS')
+      if (macExecutable) return macExecutable
+    } else if (process.platform === 'win32') {
+      const winExecutable = findFileRecursive(bundledDir, 'chrome.exe', 'chrome-win')
+      if (winExecutable) return winExecutable
+    } else {
+      const linuxExecutable = findFileRecursive(bundledDir, 'chrome', 'chrome-linux')
+      if (linuxExecutable) return linuxExecutable
     }
+
+    console.log('[Playwright] Bundled dir exists but no executable found in:', bundledDir)
   }
 
   // In development: use default Playwright install
