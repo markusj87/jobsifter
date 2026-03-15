@@ -32,6 +32,14 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
+      - name: Bundle Chromium into app
+        run: |
+          BROWSER_PATH=$(node -e "const p=require('playwright');const d=require('path').dirname(require('path').dirname(p.chromium.executablePath()));console.log(d)")
+          echo "Chromium at: $BROWSER_PATH"
+          mkdir -p playwright-browsers
+          cp -r "$BROWSER_PATH" playwright-browsers/
+          ls -la playwright-browsers/
+
       - name: Build macOS installers
         run: npm run dist:mac
         env:
@@ -43,7 +51,6 @@ jobs:
           tag_name: ${{ github.event.release.tag_name || inputs.tag }}
           files: |
             dist/*.dmg
-            dist/*.zip
 
   build-windows:
     runs-on: windows-latest
@@ -59,6 +66,16 @@ jobs:
 
       - name: Install Playwright Chromium
         run: npx playwright install chromium
+
+      - name: Bundle Chromium into app
+        shell: pwsh
+        run: |
+          $exePath = node -e "const p=require('playwright');console.log(p.chromium.executablePath())"
+          $chromiumDir = Split-Path (Split-Path $exePath)
+          Write-Host "Chromium at: $chromiumDir"
+          New-Item -ItemType Directory -Force -Path playwright-browsers | Out-Null
+          Copy-Item -Recurse $chromiumDir playwright-browsers/
+          Get-ChildItem playwright-browsers/
 
       - name: Build Windows installer
         run: npm run dist:win
