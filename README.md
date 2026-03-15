@@ -34,8 +34,8 @@ Download the latest version for your platform:
 | Platform | Download |
 |----------|----------|
 | Windows | [JobSifter-Setup-Windows.zip](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-Setup-Windows.zip) |
-| macOS (Intel) | [JobSifter-1.0.0-x64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.0.0-x64.dmg) |
-| macOS (Apple Silicon) | [JobSifter-1.0.0-arm64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.0.0-arm64.dmg) |
+| macOS (Intel) | [JobSifter-1.1.0-x64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.1.0-x64.dmg) |
+| macOS (Apple Silicon) | [JobSifter-1.1.0-arm64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.1.0-arm64.dmg) |
 
 > After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) for the AI features.
 
