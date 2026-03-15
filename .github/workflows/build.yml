@@ -60,16 +60,18 @@ jobs:
         shell: pwsh
         run: |
           $exePath = node -e "const p=require('playwright');console.log(p.chromium.executablePath())"
-          # Go up to the chromium-XXXX directory
-          $chromeDir = Split-Path (Split-Path (Split-Path $exePath))
-          $chromiumVersionDir = Split-Path $chromeDir
-          Write-Host "Chromium version dir: $chromiumVersionDir"
+          Write-Host "Chromium exe: $exePath"
+          # exePath is like: ...\ms-playwright\chromium-1208\chrome-win64\chrome.exe
+          # We want the chromium-XXXX folder
+          $chromeWinDir = Split-Path $exePath           # chrome-win64
+          $chromiumDir = Split-Path $chromeWinDir        # chromium-1208
+          Write-Host "Chromium dir: $chromiumDir"
           Write-Host "Contents:"
-          Get-ChildItem $chromiumVersionDir -Recurse -Depth 2 | Select-Object FullName
+          Get-ChildItem $chromiumDir -Depth 1 | Select-Object FullName
           New-Item -ItemType Directory -Force -Path playwright-browsers | Out-Null
-          Copy-Item -Recurse $chromiumVersionDir "playwright-browsers/"
+          Copy-Item -Recurse $chromiumDir "playwright-browsers/"
           Write-Host "Bundled:"
-          Get-ChildItem playwright-browsers -Recurse -Depth 2 | Select-Object FullName
+          Get-ChildItem playwright-browsers -Depth 2 | Select-Object FullName
 
       - name: Build Windows installer
         run: npm run dist:win
