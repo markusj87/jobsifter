@@ -77,6 +77,12 @@ const api = {
     delete: (id: number): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CV_FEEDBACK_DELETE, id)
   },
+  data: {
+    export: (): Promise<string | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.DATA_EXPORT),
+    import: (): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.DATA_IMPORT)
+  },
   coverLetters: {
     getAll: (): Promise<CoverLetter[]> => ipcRenderer.invoke(IPC_CHANNELS.COVER_LETTERS_GET_ALL),
     getOne: (id: number): Promise<CoverLetter | null> => ipcRenderer.invoke(IPC_CHANNELS.COVER_LETTERS_GET_ONE, id),

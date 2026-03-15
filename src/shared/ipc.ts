@@ -47,6 +47,10 @@ export const IPC_CHANNELS = {
   // AI
   AI_GET_MODELS: 'ai:get-models',
 
+  // Data
+  DATA_EXPORT: 'data:export',
+  DATA_IMPORT: 'data:import',
+
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set'

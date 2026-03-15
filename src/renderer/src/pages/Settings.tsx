@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../components/Toast'
 import type { AIProvider } from '../../../shared/types'
-import { SettingsIcon, TrashIcon } from '../components/icons'
+import { SettingsIcon, TrashIcon, DownloadIcon, UploadIcon } from '../components/icons'
+import Dialog from '../components/Dialog'
 
 export default function Settings() {
   const [apiProvider, setApiProvider] = useState<AIProvider>('claude')
@@ -12,6 +13,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showImportConfirm, setShowImportConfirm] = useState(false)
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -204,6 +206,74 @@ export default function Settings() {
             {saved ? 'Saved' : saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
+
+        {/* Data Export/Import */}
+        <div className="glass-card-solid" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--color-accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DownloadIcon size={16} className="text-[var(--color-accent)]" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>Data</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+            Export your data to transfer it to another computer, or import a previous backup. All data is included except your AI API key, which you'll need to re-enter on the new device.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={async () => {
+                const path = await window.api.data.export()
+                if (path) showToast(`Data exported to ${path}`, 'success')
+              }}
+              className="pill-button pill-button-secondary"
+              style={{ gap: '6px', fontSize: '13px', padding: '8px 18px' }}
+            >
+              <DownloadIcon size={14} />
+              Export Data
+            </button>
+            <button
+              onClick={() => setShowImportConfirm(true)}
+              className="pill-button pill-button-secondary"
+              style={{ gap: '6px', fontSize: '13px', padding: '8px 18px' }}
+            >
+              <UploadIcon size={14} />
+              Import Data
+            </button>
+          </div>
+        </div>
+
+        {/* Import Confirm Dialog */}
+        <Dialog
+          open={showImportConfirm}
+          onClose={() => setShowImportConfirm(false)}
+          title="Import data?"
+          description="This will replace all your current data (jobs, scores, CV, cover letters, feedback) with the data from the imported file."
+        >
+          <p style={{ fontSize: '13px', color: 'var(--color-red-text)', margin: '0 0 16px 0', fontWeight: 500 }}>
+            This action cannot be undone. Consider exporting your current data first as a backup.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={async () => {
+                const success = await window.api.data.import()
+                if (success) {
+                  showToast('Data imported! Restarting...', 'success')
+                }
+                setShowImportConfirm(false)
+              }}
+              className="pill-button pill-button-primary"
+              style={{ fontSize: '13px', padding: '8px 20px' }}
+            >
+              Import and Restart
+            </button>
+            <button
+              onClick={() => setShowImportConfirm(false)}
+              className="pill-button pill-button-secondary"
+              style={{ fontSize: '13px', padding: '8px 20px' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </Dialog>
 
         {/* Disclaimer */}
         <div className="glass-card-solid" style={{ padding: '20px 24px' }}>
