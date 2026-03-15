@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0071e3"/>
+      <stop offset="100%" style="stop-color:#004aad"/>
+    </linearGradient>
+    <linearGradient id="funnel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.95"/>
+      <stop offset="100%" style="stop-color:#e0e8f0;stop-opacity:0.9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96" fill="url(#bg)"/>
+
+  <!-- Subtle inner shadow/glow -->
+  <rect x="24" y="24" width="464" height="464" rx="88" ry="88" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+  <!-- Sifter/funnel shape - represents filtering -->
+  <path d="M 136 148 L 376 148 L 296 268 L 296 348 L 216 380 L 216 268 Z"
+        fill="url(#funnel)"
+        stroke="rgba(255,255,255,0.3)"
+        stroke-width="2"
+        stroke-linejoin="round"/>
+
+  <!-- Three horizontal lines going into the funnel (jobs being sifted) -->
+  <rect x="160" y="112" width="192" height="8" rx="4" fill="rgba(255,255,255,0.4)"/>
+  <rect x="176" y="96" width="160" height="6" rx="3" fill="rgba(255,255,255,0.25)"/>
+  <rect x="192" y="82" width="128" height="5" rx="2.5" fill="rgba(255,255,255,0.15)"/>
+
+  <!-- Small sparkle/star - represents AI -->
+  <g transform="translate(340, 320)" fill="#FFD60A">
+    <path d="M 0 -20 L 5 -5 L 20 0 L 5 5 L 0 20 L -5 5 L -20 0 L -5 -5 Z"/>
+  </g>
+  <g transform="translate(360, 280)" fill="#FFD60A" opacity="0.6">
+    <path d="M 0 -10 L 2.5 -2.5 L 10 0 L 2.5 2.5 L 0 10 L -2.5 2.5 L -10 0 L -2.5 -2.5 Z"/>
+  </g>
+
+  <!-- Checkmark coming out of funnel bottom -->
+  <path d="M 232 390 L 248 410 L 280 370"
+        fill="none"
+        stroke="#34C759"
+        stroke-width="10"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

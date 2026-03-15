@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: #333;
+    line-height: 1.6;
+    padding: 0;
+  }
+  .header {
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1f2937;
+    margin: 0;
+  }
+  .contact {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+  .date {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 24px;
+  }
+  .content {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <p class="name">{{name}}</p>
+    <p class="contact">{{email}} | {{phone}} | {{location}}</p>
+  </div>
+  <p class="date">{{date}}</p>
+  <div class="content">{{content}}</div>
+</body>
+</html>

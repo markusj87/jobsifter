@@ -1,0 +1,50 @@
+appId: com.jobsifter.app
+productName: JobSifter
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - '!node_modules/playwright/.local-browsers/**'
+  - '!node_modules/playwright-core/.local-browsers/**'
+  - '!**/*.map'
+asar: true
+asarUnpack:
+  - 'node_modules/better-sqlite3/**'
+  - 'node_modules/pdf-parse/**'
+npmRebuild: true
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+  artifactName: '${productName}-Setup-${version}.${ext}'
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/icon.icns
+  artifactName: '${productName}-${version}-${arch}.${ext}'
+  category: public.app-category.productivity
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: assets/icon.png
+  category: Office
