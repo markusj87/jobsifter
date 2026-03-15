@@ -10,7 +10,6 @@ import { chromium, type BrowserContext, type Page } from 'playwright'
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { existsSync, readdirSync } from 'fs'
-import { execFile } from 'child_process'
 import { IPC_CHANNELS } from '../../shared/ipc'
 
 /** Recursively find a file by name within a directory. */
@@ -56,26 +55,53 @@ function findChromiumPath(): string | undefined {
   return undefined
 }
 
-/** Install Chromium using Playwright's CLI. */
-function installChromium(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const playwrightCli = require.resolve('playwright-core/cli')
-    console.log('[Playwright] Installing Chromium...')
-
-    const child = execFile(process.execPath, [playwrightCli, 'install', 'chromium'], {
-      timeout: 300000
-    }, (error) => {
-      if (error) {
-        console.error('[Playwright] Install failed:', error.message)
-        reject(new Error('Failed to install browser. Please open a terminal and run: npx playwright install chromium'))
-      } else {
-        console.log('[Playwright] Chromium installed successfully')
-        resolve()
+/** Install Chromium using Playwright's registry API directly. */
+async function installChromium(): Promise<void> {
+  console.log('[Playwright] Installing Chromium via registry API...')
+  try {
+    // Use Playwright's internal registry to download Chromium
+    const { Registry } = require('playwright-core/lib/server/registry') as {
+      Registry: new (browsersJSON: string) => {
+        install(browserNames: string[], forceReinstall: boolean): Promise<void>
       }
+    }
+    const path = require('path')
+    const browsersJSON = path.join(path.dirname(require.resolve('playwright-core')), 'browsers.json')
+    const registry = new Registry(browsersJSON)
+    await registry.install(['chromium'], false)
+    console.log('[Playwright] Chromium installed successfully')
+  } catch (err) {
+    console.error('[Playwright] Registry install failed:', err)
+    // Fallback: try spawning node directly
+    try {
+      await installChromiumViaSpawn()
+    } catch (spawnErr) {
+      console.error('[Playwright] Spawn install also failed:', spawnErr)
+      throw new Error('Could not install browser automatically. On macOS, open Terminal and run: npx playwright install chromium')
+    }
+  }
+}
+
+/** Fallback: install via spawning npx. */
+function installChromiumViaSpawn(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process')
+    console.log('[Playwright] Trying npx install...')
+    const child = spawn('npx', ['playwright', 'install', 'chromium'], {
+      shell: true,
+      timeout: 300000,
+      stdio: 'pipe'
     })
 
-    child.stdout?.on('data', (data: string) => console.log('[Playwright]', data.toString().trim()))
-    child.stderr?.on('data', (data: string) => console.log('[Playwright]', data.toString().trim()))
+    child.stdout?.on('data', (data: Buffer) => console.log('[Playwright]', data.toString().trim()))
+    child.stderr?.on('data', (data: Buffer) => console.log('[Playwright]', data.toString().trim()))
+
+    child.on('close', (code: number) => {
+      if (code === 0) resolve()
+      else reject(new Error(`npx playwright install exited with code ${code}`))
+    })
+
+    child.on('error', reject)
   })
 }
 

@@ -162,41 +162,62 @@ export default function ScanJobs() {
       <div className="stagger-enter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Browser Install Dialog */}
         <Dialog
-          open={browserStatus?.status === 'installing'}
-          onClose={() => {}}
-          title="Setting up browser"
-          closeOnBackdrop={false}
+          open={browserStatus !== null}
+          onClose={() => { if (browserStatus?.status === 'error') setBrowserStatus(null) }}
+          title={browserStatus?.status === 'error' ? 'Browser setup failed' : 'Setting up browser'}
+          closeOnBackdrop={browserStatus?.status === 'error'}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '8px 0' }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '50%',
-              background: 'var(--color-accent-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <DownloadIcon size={24} className="text-[var(--color-accent)]" />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '15px', color: 'var(--color-text-primary)', fontWeight: 500, margin: '0 0 6px 0' }}>
-                Downloading Chromium browser
-              </p>
-              <p style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', margin: '0 0 8px 0', lineHeight: 1.5 }}>
-                This is a one-time setup (~170MB) that happens automatically. No action needed from you - just wait about a minute.
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', margin: 0, lineHeight: 1.5 }}>
-                Chromium is the open source browser engine that powers Google Chrome. JobSifter uses its own private copy to browse job listings on your behalf. It is installed in your user folder and does not affect your system or other browsers.
-              </p>
-            </div>
-            <div style={{
-              width: '100%', height: '4px', borderRadius: '2px',
-              background: 'var(--color-surface-active)', overflow: 'hidden'
-            }}>
+          {browserStatus?.status === 'installing' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '8px 0' }}>
               <div style={{
-                height: '100%', borderRadius: '2px', background: 'var(--color-accent)',
-                animation: 'indeterminate 1.5s ease-in-out infinite',
-                width: '40%'
-              }} />
+                width: '48px', height: '48px', borderRadius: '50%',
+                background: 'var(--color-accent-soft)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <DownloadIcon size={24} className="text-[var(--color-accent)]" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '15px', color: 'var(--color-text-primary)', fontWeight: 500, margin: '0 0 6px 0' }}>
+                  Downloading Chromium browser
+                </p>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                  This is a one-time setup (~170MB) that happens automatically. No action needed from you - just wait about a minute.
+                </p>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', margin: 0, lineHeight: 1.5 }}>
+                  Chromium is the open source browser engine that powers Google Chrome. JobSifter uses its own private copy to browse job listings on your behalf. It is installed in your user folder and does not affect your system or other browsers.
+                </p>
+              </div>
+              <div style={{
+                width: '100%', height: '4px', borderRadius: '2px',
+                background: 'var(--color-surface-active)', overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%', borderRadius: '2px', background: 'var(--color-accent)',
+                  animation: 'indeterminate 1.5s ease-in-out infinite',
+                  width: '40%'
+                }} />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--color-red-text)', margin: 0, lineHeight: 1.5 }}>
+                {browserStatus?.message}
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                To install manually, open Terminal and run:
+              </p>
+              <code style={{
+                display: 'block', padding: '10px 14px', borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-surface)', fontSize: '13px', fontFamily: 'var(--font-mono)',
+                color: 'var(--color-text-primary)', userSelect: 'all'
+              }}>
+                npx playwright install chromium
+              </code>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', margin: 0 }}>
+                Then restart JobSifter and try again.
+              </p>
+            </div>
+          )}
         </Dialog>
 
         {/* LinkedIn Connection Card */}
