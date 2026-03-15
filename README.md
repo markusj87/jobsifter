@@ -39,7 +39,21 @@ Download the latest version for your platform:
 
 > After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) for the AI features.
 
-> **Note:** The macOS build needs to be built on a Mac. If you're on macOS, clone the repo and run `npm run dist:mac` to build it yourself.
+<details>
+<summary><strong>macOS: "App is damaged" warning</strong></summary>
+
+macOS blocks apps that aren't signed with an Apple Developer certificate. This is normal for free open source apps. To open JobSifter:
+
+**Easy way:** Right-click (or Control-click) the app → click **Open** → click **Open** again in the dialog.
+
+**If that doesn't work:** Open Terminal and run:
+```bash
+xattr -cr /Applications/JobSifter.app
+```
+Then open the app normally.
+
+This only needs to be done once.
+</details>
 
 ## Features
 
