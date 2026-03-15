@@ -33,9 +33,9 @@ Download the latest version for your platform:
 
 | Platform | Download |
 |----------|----------|
-| Windows | [JobSifter-Setup-1.0.0.exe](https://github.com/markusj87/linkedinjobfinder/releases/latest/download/JobSifter-Setup-1.0.0.exe) |
-| macOS (Intel) | [JobSifter-1.0.0-x64.dmg](https://github.com/markusj87/linkedinjobfinder/releases/latest/download/JobSifter-1.0.0-x64.dmg) |
-| macOS (Apple Silicon) | [JobSifter-1.0.0-arm64.dmg](https://github.com/markusj87/linkedinjobfinder/releases/latest/download/JobSifter-1.0.0-arm64.dmg) |
+| Windows | [JobSifter-Setup-1.0.0-Windows.zip](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-Setup-1.0.0-Windows.zip) |
+| macOS (Intel) | [JobSifter-1.0.0-x64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.0.0-x64.dmg) |
+| macOS (Apple Silicon) | [JobSifter-1.0.0-arm64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-1.0.0-arm64.dmg) |
 
 > After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) for the AI features.
 
@@ -81,7 +81,7 @@ Download the latest version for your platform:
 
 ```bash
 # Clone the repository
-git clone https://github.com/markusj87/linkedinjobfinder.git
+git clone https://github.com/markusj87/jobsifter.git
 cd jobsifter
 
 # Install dependencies (automatically rebuilds native modules for Electron)
@@ -356,6 +356,6 @@ You are free to use, modify, and distribute this software. Any derivative work m
 
 <p align="center">
   Built with Electron, React, and AI.<br>
-  <a href="https://github.com/markusj87/linkedinjobfinder/issues">Report Bug</a> &middot;
-  <a href="https://github.com/markusj87/linkedinjobfinder/issues">Request Feature</a>
+  <a href="https://github.com/markusj87/jobsifter/issues">Report Bug</a> &middot;
+  <a href="https://github.com/markusj87/jobsifter/issues">Request Feature</a>
 </p>
