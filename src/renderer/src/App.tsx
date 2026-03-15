@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
+import { ThemeProvider } from './components/ThemeProvider'
 import Dialog from './components/Dialog'
 import ErrorBoundary from './components/ErrorBoundary'
 import MainLayout from './components/layout/MainLayout'
@@ -70,6 +71,7 @@ export default function App() {
   }
 
   return (
+    <ThemeProvider>
     <ToastProvider>
       {!disclaimerAccepted && <DisclaimerDialog onAccept={handleAccept} />}
       <HashRouter>
@@ -91,5 +93,6 @@ export default function App() {
         </MainLayout>
       </HashRouter>
     </ToastProvider>
+    </ThemeProvider>
   )
 }

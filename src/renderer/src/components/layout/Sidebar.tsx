@@ -8,6 +8,7 @@ import {
   SparkleIcon,
   SettingsIcon
 } from '../icons'
+import { useTheme } from '../ThemeProvider'
 import { ComponentType } from 'react'
 
 interface NavItem {
@@ -27,6 +28,8 @@ const navItems: NavItem[] = [
 ]
 
 export default function Sidebar() {
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <aside
       className="
@@ -112,11 +115,12 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* Version footer */}
+      {/* Theme toggle + version footer */}
       <div
         className="px-5 py-3"
         style={{
-          borderTop: '1px solid var(--color-border-light)'
+          borderTop: '1px solid var(--color-border-light)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}
       >
         <span
@@ -128,6 +132,20 @@ export default function Sidebar() {
         >
           v1.0.0
         </span>
+        <button
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          style={{
+            width: '28px', height: '28px', borderRadius: '50%',
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface-hover)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s',
+            fontSize: '13px'
+          }}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
       </div>
     </aside>
   )
