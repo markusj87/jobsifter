@@ -9,11 +9,6 @@ asar: true
 asarUnpack:
   - 'node_modules/better-sqlite3/**'
   - 'node_modules/pdf-parse/**'
-extraResources:
-  - from: playwright-browsers/
-    to: playwright-browsers/
-    filter:
-      - '**/*'
 npmRebuild: true
 win:
   target:
@@ -22,6 +17,11 @@ win:
         - x64
   icon: assets/icon.ico
   artifactName: '${productName}-Setup-${version}.${ext}'
+  extraResources:
+    - from: playwright-browsers/
+      to: playwright-browsers/
+      filter:
+        - '**/*'
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

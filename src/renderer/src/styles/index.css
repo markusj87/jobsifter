@@ -161,6 +161,12 @@ body {
   animation: fadeInUp 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
 
+/* Indeterminate progress bar */
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
 /* Bouncing dots */
 @keyframes bounceDot {
   0%, 80%, 100% { transform: translateY(0); }

@@ -29,17 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium
-
-      - name: Bundle Chromium into app
-        run: |
-          BROWSER_PATH=$(node -e "const p=require('playwright');const d=require('path').dirname(require('path').dirname(p.chromium.executablePath()));console.log(d)")
-          echo "Chromium at: $BROWSER_PATH"
-          mkdir -p playwright-browsers
-          cp -r "$BROWSER_PATH" playwright-browsers/
-          ls -la playwright-browsers/
-
       - name: Build macOS installers
         run: npm run dist:mac
         env:
@@ -67,15 +56,20 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
-      - name: Bundle Chromium into app
+      - name: Bundle Chromium for Windows
         shell: pwsh
         run: |
           $exePath = node -e "const p=require('playwright');console.log(p.chromium.executablePath())"
-          $chromiumDir = Split-Path (Split-Path $exePath)
-          Write-Host "Chromium at: $chromiumDir"
+          # Go up to the chromium-XXXX directory
+          $chromeDir = Split-Path (Split-Path (Split-Path $exePath))
+          $chromiumVersionDir = Split-Path $chromeDir
+          Write-Host "Chromium version dir: $chromiumVersionDir"
+          Write-Host "Contents:"
+          Get-ChildItem $chromiumVersionDir -Recurse -Depth 2 | Select-Object FullName
           New-Item -ItemType Directory -Force -Path playwright-browsers | Out-Null
-          Copy-Item -Recurse $chromiumDir playwright-browsers/
-          Get-ChildItem playwright-browsers/
+          Copy-Item -Recurse $chromiumVersionDir "playwright-browsers/"
+          Write-Host "Bundled:"
+          Get-ChildItem playwright-browsers -Recurse -Depth 2 | Select-Object FullName
 
       - name: Build Windows installer
         run: npm run dist:win

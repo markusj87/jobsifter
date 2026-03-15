@@ -40,6 +40,12 @@ Download the latest version for your platform:
 > After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) for the AI features.
 
 <details>
+<summary><strong>macOS: First launch browser download</strong></summary>
+
+On macOS, the first time you click "Connect" in Scan Jobs, the app will automatically download Chromium (~170MB). This takes about a minute and only happens once. You'll see the progress in the Scanner Log. On Windows, the browser is included in the installer.
+</details>
+
+<details>
 <summary><strong>macOS: "App is damaged" warning</strong></summary>
 
 macOS blocks apps that aren't signed with an Apple Developer certificate. This is normal for free open source apps. To open JobSifter:

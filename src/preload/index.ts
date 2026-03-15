@@ -37,6 +37,11 @@ const api = {
       const handler = (_: unknown, msg: string) => callback(msg)
       ipcRenderer.on(IPC_CHANNELS.SCAN_LOG, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.SCAN_LOG, handler)
+    },
+    onBrowserStatus: (callback: (data: { status: string; message: string }) => void): (() => void) => {
+      const handler = (_: unknown, data: { status: string; message: string }) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.BROWSER_STATUS, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_STATUS, handler)
     }
   },
   jobs: {

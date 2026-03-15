@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   SCAN_STOP: 'scan:stop',
   SCAN_PROGRESS: 'scan:progress',
   SCAN_LOG: 'scan:log',
+  BROWSER_STATUS: 'browser:status',
 
   // Jobs
   JOBS_GET_ALL: 'jobs:get-all',

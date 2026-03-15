@@ -1,68 +1,104 @@
 /**
  * Playwright browser lifecycle manager.
  * Manages a persistent Chromium context with anti-detection measures.
- * Uses bundled Chromium from extraResources in production,
- * or the default Playwright install in development.
+ *
+ * On Windows: Chromium is bundled in extraResources (no download needed).
+ * On macOS/Linux: Auto-installs Chromium on first use if not found.
  */
 
 import { chromium, type BrowserContext, type Page } from 'playwright'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { existsSync, readdirSync } from 'fs'
+import { execFile } from 'child_process'
+import { IPC_CHANNELS } from '../../shared/ipc'
 
-/** Recursively search for a file by name, optionally requiring a parent directory name. */
-function findFileRecursive(dir: string, filename: string, parentHint?: string, depth = 0): string | undefined {
+/** Recursively find a file by name within a directory. */
+function findFile(dir: string, filename: string, depth = 0): string | undefined {
   if (depth > 8) return undefined
   try {
     const entries = readdirSync(dir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = join(dir, entry.name)
-      if (entry.isFile() && entry.name === filename) {
-        if (!parentHint || dir.includes(parentHint)) return fullPath
-      }
+      if (entry.isFile() && entry.name === filename) return fullPath
       if (entry.isDirectory() && !entry.name.startsWith('.')) {
-        const found = findFileRecursive(fullPath, filename, parentHint, depth + 1)
+        const found = findFile(fullPath, filename, depth + 1)
         if (found) return found
       }
     }
-  } catch { /* permission errors etc */ }
+  } catch { /* skip */ }
   return undefined
 }
 
-/** Locate the Chromium executable, checking bundled location first. */
+/** Find Chromium executable - checks bundled location first, then default Playwright install. */
 function findChromiumPath(): string | undefined {
-  // In production: Chromium is bundled in extraResources/playwright-browsers/
-  const resourcesPath = process.resourcesPath
-  const bundledDir = join(resourcesPath, 'playwright-browsers')
-
+  // Check bundled location (Windows production builds)
+  const bundledDir = join(process.resourcesPath, 'playwright-browsers')
   if (existsSync(bundledDir)) {
-    // Search recursively for the executable in the bundled directory
-    if (process.platform === 'darwin') {
-      const macExecutable = findFileRecursive(bundledDir, 'Google Chrome for Testing', 'MacOS')
-      if (macExecutable) return macExecutable
-    } else if (process.platform === 'win32') {
-      const winExecutable = findFileRecursive(bundledDir, 'chrome.exe', 'chrome-win')
-      if (winExecutable) return winExecutable
-    } else {
-      const linuxExecutable = findFileRecursive(bundledDir, 'chrome', 'chrome-linux')
-      if (linuxExecutable) return linuxExecutable
+    const exe = process.platform === 'win32'
+      ? findFile(bundledDir, 'chrome.exe')
+      : findFile(bundledDir, 'Google Chrome for Testing')
+    if (exe) {
+      console.log('[Playwright] Found bundled Chromium:', exe)
+      return exe
     }
-
-    console.log('[Playwright] Bundled dir exists but no executable found in:', bundledDir)
   }
 
-  // In development: use default Playwright install
+  // Check default Playwright install
   try {
     const defaultPath = chromium.executablePath()
-    if (existsSync(defaultPath)) return defaultPath
+    if (existsSync(defaultPath)) {
+      console.log('[Playwright] Found installed Chromium:', defaultPath)
+      return defaultPath
+    }
   } catch { /* not installed */ }
 
   return undefined
 }
 
+/** Install Chromium using Playwright's CLI. */
+function installChromium(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const playwrightCli = require.resolve('playwright-core/cli')
+    console.log('[Playwright] Installing Chromium...')
+
+    const child = execFile(process.execPath, [playwrightCli, 'install', 'chromium'], {
+      timeout: 300000
+    }, (error) => {
+      if (error) {
+        console.error('[Playwright] Install failed:', error.message)
+        reject(new Error('Failed to install browser. Please open a terminal and run: npx playwright install chromium'))
+      } else {
+        console.log('[Playwright] Chromium installed successfully')
+        resolve()
+      }
+    })
+
+    child.stdout?.on('data', (data: string) => console.log('[Playwright]', data.toString().trim()))
+    child.stderr?.on('data', (data: string) => console.log('[Playwright]', data.toString().trim()))
+  })
+}
+
+/** Send a log message to the renderer's scan log. */
+function sendLog(msg: string): void {
+  const windows = BrowserWindow.getAllWindows()
+  if (windows.length > 0 && !windows[0].isDestroyed()) {
+    windows[0].webContents.send(IPC_CHANNELS.SCAN_LOG, msg)
+  }
+}
+
+/** Send browser install status to the renderer. */
+function sendBrowserStatus(status: 'installing' | 'installed' | 'error', message: string): void {
+  const windows = BrowserWindow.getAllWindows()
+  if (windows.length > 0 && !windows[0].isDestroyed()) {
+    windows[0].webContents.send(IPC_CHANNELS.BROWSER_STATUS, { status, message })
+  }
+}
+
 class PlaywrightManager {
   private context: BrowserContext | null = null
   private userDataDir: string
+  private installing = false
 
   constructor() {
     this.userDataDir = join(app.getPath('userData'), 'linkedin-browser-profile')
@@ -71,14 +107,32 @@ class PlaywrightManager {
   async launch(): Promise<BrowserContext> {
     if (this.context) return this.context
 
-    const executablePath = findChromiumPath()
+    let executablePath = findChromiumPath()
+
+    // Auto-install if not found (primarily for macOS where bundling doesn't work)
     if (!executablePath) {
-      throw new Error(
-        'Chromium browser not found. If running from source, run: npx playwright install chromium'
-      )
+      if (this.installing) {
+        throw new Error('Browser is currently being installed. Please wait...')
+      }
+      this.installing = true
+      sendLog('Browser not found. Downloading Chromium (~170MB), this only happens once...')
+      sendBrowserStatus('installing', 'Downloading browser (~170MB). This only happens once...')
+      try {
+        await installChromium()
+        sendLog('Chromium installed successfully!')
+        sendBrowserStatus('installed', 'Browser ready!')
+        executablePath = findChromiumPath()
+      } catch (err) {
+        sendBrowserStatus('error', err instanceof Error ? err.message : 'Failed to install browser')
+        throw err
+      } finally {
+        this.installing = false
+      }
     }
 
-    console.log('[Playwright] Using Chromium at:', executablePath)
+    if (!executablePath) {
+      throw new Error('Chromium browser not found. Please open a terminal and run: npx playwright install chromium')
+    }
 
     this.context = await chromium.launchPersistentContext(this.userDataDir, {
       headless: false,
