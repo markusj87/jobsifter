@@ -52,9 +52,11 @@ Then restart the app.
 </details>
 
 <details>
-<summary><strong>macOS: "App is damaged" warning</strong></summary>
+<summary><strong>macOS: "App is damaged" warning (fork/self-built only)</strong></summary>
 
-macOS blocks apps that aren't signed with an Apple Developer certificate. This is normal for free open source apps. To open JobSifter:
+The official JobSifter downloads are **signed and notarized** with an Apple Developer certificate — they should open without any warnings.
+
+If you built the app yourself from a fork or from source, macOS will block it since it won't be signed. To open it:
 
 **Easy way:** Right-click (or Control-click) the app → click **Open** → click **Open** again in the dialog.
 
@@ -62,9 +64,7 @@ macOS blocks apps that aren't signed with an Apple Developer certificate. This i
 ```bash
 xattr -cr /Applications/JobSifter.app
 ```
-Then open the app normally.
-
-This only needs to be done once.
+Then open the app normally. This only needs to be done once.
 </details>
 
 ## Features
