@@ -36,7 +36,7 @@ mac:
   icon: assets/icon.icns
   artifactName: '${productName}-${arch}.${ext}'
   category: public.app-category.productivity
-  identity: "Developer ID Application: Meloq AB (5F48FT574T)"
+  identity: "Meloq AB (5F48FT574T)"
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: entitlements.mac.plist
