@@ -33,6 +33,21 @@ jobs:
         run: npm run dist:mac
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Notarize macOS DMGs
+        run: |
+          for dmg in dist/*.dmg; do
+            echo "Submitting $dmg for notarization..."
+            xcrun notarytool submit "$dmg" \
+              --apple-id "${{ secrets.APPLE_ID }}" \
+              --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+              --team-id "${{ secrets.APPLE_TEAM_ID }}" \
+              --wait
+            echo "Stapling $dmg..."
+            xcrun stapler staple "$dmg"
+          done
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
