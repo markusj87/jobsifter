@@ -21,7 +21,7 @@ Job searching sucks. You open listing after listing, read through walls of text,
 
 JobSifter was built to fix that. It does the tedious part for you:
 
-- **Scans job listings automatically** - no more manually clicking through pages of results. JobSifter opens each listing, reads the full description, and saves it locally
+- **Scans job listings from multiple platforms** - searches LinkedIn, Indeed, Platsbanken (Sweden), and RemoteOK automatically. No more manually clicking through pages of results
 - **Tells you which jobs actually match you** - AI analyzes every job against your CV and gives you a match score, so you can skip the 30% matches and focus on the 85% ones
 - **Generates cover letters from your real experience** - when you find a great match, AI writes a personalized cover letter based on your actual CV and the specific job description. No generic templates
 
@@ -63,22 +63,37 @@ This only needs to be done once.
 
 ## Features
 
+### Job Sources
+
+JobSifter supports four job platforms, each with its own tab in Scan Jobs:
+
+| Source | Method | Auth Required | Speed |
+|--------|--------|---------------|-------|
+| **LinkedIn** | Browser automation | Yes (login) | ~100 jobs / 15 min |
+| **Indeed** | Browser automation | No | ~100 jobs / 10 min |
+| **Platsbanken** (Sweden) | Open REST API | No | Hundreds in seconds |
+| **RemoteOK** | Public JSON API | No | All jobs in one call |
+
 ### Core Workflow
 - **AI-Powered CV Parsing** - Upload a PDF resume and AI extracts your name, contact info, skills, experience, education, and generates a detailed candidate profile
-- **Automated Job Scanning** - Browses job listing pages with a real browser, scrolls through all results, handles pagination, and extracts full job descriptions
-- **Custom Search** - Search by keywords and location (e.g. "Product Manager" + "Stockholm") on top of predefined categories
-- **AI Job Matching** - Analyzes each job against your CV with a 0-100 score, strengths, gaps, fit summary, and interview advice
+- **Multi-Platform Job Scanning** - Scans LinkedIn, Indeed, Platsbanken, and RemoteOK. Each source has its own tab with source-specific search fields
+- **Custom Search** - Search by keywords and location on any supported platform
+- **AI Job Matching** - Analyzes each job against your CV with a 0-100 score, strengths, gaps, fit summary, and interview advice. Score all jobs at once or filter by source
 - **Resume Feedback** - Get AI-powered feedback on your CV tailored to a specific role and company. From My Jobs you can get feedback based on the full job description, or from the Resume page by entering any role/company manually. All feedback is saved so you can revisit it anytime
 - **Cover Letter Generation** - Creates personalized, natural-sounding cover letters that reference your actual experience
 - **PDF Export** - Export cover letters as professionally formatted PDFs
+- **Data Export/Import** - Transfer your jobs and settings between computers. API keys are excluded from exports for security
+- **Dark Mode** - Apple-style dark/light theme toggle
 
 ### Technical Highlights
-- **Batch AI Scoring** - Scores 10 jobs per API call, 5 calls in parallel = 50 jobs simultaneously
+- **Pluggable Source Architecture** - Each job source implements a shared `JobSource` interface, making it easy to add new platforms
+- **Batch AI Scoring** - Scores 10 jobs per API call, 5 calls in parallel = 50 jobs simultaneously. Filter by source to score selectively
 - **Token Tracking** - Real-time token consumption and cost estimates during scoring
 - **Incremental Scanning** - Skips already-scanned jobs, resumes where you left off
 - **Session Persistence** - Browser login session saved to disk, no re-authentication needed
 - **Offline Browsing** - All scanned jobs stored locally in SQLite, browse and filter without internet
-- **36 Job Categories** - Predefined categories covering all industries plus custom keyword search
+- **Background Scanning** - Navigate the app freely while scanning continues. Active source tab shows a pulsing indicator
+- **36 LinkedIn Categories** - Predefined categories covering all industries plus custom keyword search
 - **Privacy First** - Zero telemetry, no servers, data only leaves your machine to your chosen AI provider
 
 ## Screenshots
@@ -137,40 +152,38 @@ npm run dist
 
 1. **Connect AI** - Go to Settings, select Claude or OpenAI, enter your API key, choose a model
 2. **Upload CV** - Go to Resume, upload your PDF. AI parses it into structured data with a detailed candidate profile
-3. **Scan Jobs** - Go to Scan Jobs, connect your browser session, select categories or add custom searches, hit Start Scan
-4. **Review Matches** - Go to My Jobs, click Score All. AI scores every job in parallel batches. Sort and filter by score
-5. **Deep Dive** - Click any job to see full description, match analysis, strengths, gaps, and personalized interview advice
+3. **Scan Jobs** - Go to Scan Jobs, pick a source tab (LinkedIn, Indeed, Platsbanken, or RemoteOK), enter search criteria, hit Start Scan
+4. **Review Matches** - Go to My Jobs, click Score All. Filter by source if needed. AI scores every job in parallel batches. Sort and filter by score
+5. **Deep Dive** - Click any job to see full description, match analysis, strengths, gaps, and personalized interview advice. Score individual jobs directly from the detail page
 6. **Resume Feedback** - Get AI feedback on how to improve your CV for a specific job. Available from My Jobs (uses full job description) or from the Resume page (manual entry)
 7. **Apply** - Generate a cover letter, edit it, export as PDF
 
 ### Scanning Flow
 
 ```
-User clicks Start Scan
+User picks a source tab and clicks Start Scan
   |
   v
-Playwright opens browser (visible, with saved session)
-  |
-  v
-For each category / custom search:
-  |
-  ├── Navigate to job listing page
-  ├── Scroll to load all jobs (smart scroll with job counting)
-  ├── Collect all job IDs from page
-  ├── For each job:
-  |     ├── Skip if already in database
-  |     ├── Click job card to load detail panel
-  |     ├── Extract title, company, location, description, easy-apply status
-  |     ├── Save to SQLite
-  |     └── Wait (human-like random delay)
-  ├── Click next page button
-  └── Repeat until no more pages
+[LinkedIn / Indeed]              [Platsbanken / RemoteOK]
+Playwright opens browser          HTTP API call (no browser)
+  |                                |
+  v                                v
+For each page of results:        Fetch all results via pagination
+  ├── Navigate / scroll            ├── Parse JSON response
+  ├── Extract job cards            ├── For each job:
+  ├── For each job:                |     ├── Skip if already in DB
+  |     ├── Skip if in DB          |     └── Save to SQLite
+  |     ├── Click to load detail   └── Return results
+  |     ├── Extract description
+  |     └── Save to SQLite
+  ├── Next page
+  └── Repeat
 ```
 
 ### AI Scoring Flow
 
 ```
-User clicks Score All
+User clicks Score All (optionally filtered by source)
   |
   v
 Unscored jobs split into batches of 10
@@ -207,58 +220,82 @@ Results saved to SQLite, UI updates progressively
 src/
   main/                          # Electron main process (Node.js)
     index.ts                     # App lifecycle, window management
-    ipc-handlers.ts              # All IPC request handlers (CV, jobs, AI, settings)
+    ipc-handlers/
+      index.ts                   # Central IPC registration
+      scan.ts                    # Multi-source scanning IPC
+      jobs.ts                    # Job retrieval, scoring, management
+      cv.ts                      # CV upload/parse/update
+      settings.ts                # Settings + data export/import
+      cover-letters.ts           # Cover letter CRUD + PDF export
+      cv-feedback.ts             # Resume feedback generation
+    sources/                     # Pluggable job source system
+      types.ts                   # JobSource interface, SearchParams, RawJob
+      registry.ts                # Source registry (getSource, getAllSources)
+      linkedin/
+        index.ts                 # LinkedIn source (browser, requires auth)
+        scanner.ts               # LinkedIn scanning logic
+        selectors.ts             # LinkedIn DOM selectors
+      indeed/
+        index.ts                 # Indeed source (browser, no auth)
+        selectors.ts             # Indeed DOM selectors
+      platsbanken/
+        index.ts                 # Platsbanken source (REST API)
+      remoteok/
+        index.ts                 # RemoteOK source (JSON API)
     ai/
       ai-service.ts              # AI provider abstraction (Claude/OpenAI), token tracking
-      prompts.ts                 # All AI prompt templates (CV parsing, matching, cover letters)
+      prompts.ts                 # All AI prompt templates
+      parse-ai-response.ts       # JSON parsing utilities
     browser/
-      playwright-manager.ts      # Browser lifecycle, persistent context, stealth config
+      playwright-manager.ts      # Browser lifecycle, Chromium bundling, auto-install
       linkedin-auth.ts           # Session detection via cookies
-      scanner.ts                 # Job scanning orchestration, pagination, error recovery
+      scanner.ts                 # Legacy LinkedIn scanner (used by source adapter)
       scroll-utils.ts            # Smart scrolling with job count detection
-      selectors.ts               # Centralized DOM selectors (easy to update)
+      selectors.ts               # LinkedIn DOM selectors
+      extractor.ts               # Job detail extraction from DOM
+      pagination.ts              # Page navigation
     database/
       database.ts                # SQLite connection, WAL mode, migrations
-      migrations.ts              # Schema definitions (jobs, cv, cover_letters, settings)
-      repositories/              # Data access layer
-        jobs.ts                  # Job CRUD, filtering, sorting, pagination
+      migrations.ts              # Schema + migration from old linkedin_job_id format
+      repositories/
+        jobs.ts                  # Job CRUD, filtering by source, sorting, pagination
         cv.ts                    # CV upsert/get
         cover-letters.ts         # Cover letter CRUD
         settings.ts              # Key-value settings store
         cv-feedback.ts           # Resume feedback CRUD
     pdf/
       pdf-generator.ts           # HTML-to-PDF via headless Playwright
-      templates/
-        cover-letter.html        # Cover letter PDF template
   preload/
     index.ts                     # Typed contextBridge API (renderer <-> main)
   renderer/                      # React frontend
     src/
-      App.tsx                    # Root component, routing, first-launch disclaimer
+      App.tsx                    # Root component, routing, theme provider
       components/
+        ThemeProvider.tsx         # Dark/light mode context
         Toast.tsx                # Global notification system
         icons.tsx                # SVG icon components
+        Dialog.tsx               # Modal dialog component
         layout/
-          Sidebar.tsx            # Navigation sidebar
+          Sidebar.tsx            # Navigation sidebar with theme toggle
           MainLayout.tsx         # Page layout with drag region
         cv/
           CVUploader.tsx         # PDF upload + text paste
           CVPreview.tsx          # Editable CV data display
       pages/
         Dashboard.tsx            # Stats, quick actions, top matches
-        ScanJobs.tsx             # Scan controls, custom search, category selection, logs
-        MyJobs.tsx               # Job table, filters, batch scoring with progress
-        JobDetail.tsx            # Full job view, match analysis, cover letter generation
-        Resume.tsx               # CV display (2-column layout), upload, edit
+        ScanJobs.tsx             # 4-tab source selector, scan controls, logs
+        MyJobs.tsx               # Job table with source column/filter, batch scoring
+        JobDetail.tsx            # Job view, score button, match analysis
+        Resume.tsx               # CV display, upload, edit
         ResumeFeedbackList.tsx   # Saved resume feedback list
-        ResumeFeedbackDetail.tsx # Full AI feedback view with markdown rendering
+        ResumeFeedbackDetail.tsx # Full AI feedback view
         CoverLetters.tsx         # Cover letter list
         CoverLetterEdit.tsx      # Cover letter editor + PDF export
-        Settings.tsx             # AI provider, model selection, pricing, disclaimer
+        Settings.tsx             # AI config, data export/import
       styles/
-        index.css                # Tailwind + Apple-inspired design system
+        index.css                # Tailwind + Apple design system + dark theme
   shared/                        # Shared between main + renderer
-    types.ts                     # TypeScript interfaces
+    types.ts                     # TypeScript interfaces (Job with source/externalId)
     ipc.ts                       # IPC channel constants
     constants.ts                 # App config, job categories, scan defaults
 ```
@@ -268,11 +305,11 @@ src/
 The app uses Electron's contextBridge pattern for secure communication between the renderer (React) and main process (Node.js):
 
 ```
-Renderer (React)  -->  window.api.jobs.scoreAll()
+Renderer (React)  -->  window.api.jobs.scoreAll('platsbanken')
                             |
                        Preload (contextBridge)
                             |
-                       ipcRenderer.invoke('jobs:score-all')
+                       ipcRenderer.invoke('jobs:score-all', 'platsbanken')
                             |
                        Main Process (ipcMain.handle)
                             |
@@ -286,8 +323,8 @@ Progress events (scanning, scoring) use `webContents.send()` for real-time push 
 ### Database Schema
 
 ```sql
--- All scanned jobs with match data
-jobs (id, linkedin_job_id, title, company, location, posted_date,
+-- All scanned jobs with source tracking and match data
+jobs (id, external_id, source, title, company, location, posted_date,
       easy_apply, job_url, description, category, match_score,
       match_data, scanned_at, is_bookmarked, is_hidden)
 
@@ -358,9 +395,10 @@ Contributions are welcome! Please:
 
 ### Development Notes
 
-- **DOM Selectors** - Job listing selectors are centralized in `src/main/browser/selectors.ts`. If scanning breaks due to website changes, this is the first place to update.
-- **AI Prompts** - All prompt templates are in `src/main/ai/prompts.ts`. Easy to tune and improve.
-- **Adding Models** - Model definitions with pricing are in `src/main/ai/ai-service.ts`.
+- **Adding a New Job Source** - Implement the `JobSource` interface in `src/main/sources/`, register it in `registry.ts`, and add a tab in `ScanJobs.tsx`
+- **DOM Selectors** - Selectors are centralized per source (e.g. `src/main/sources/indeed/selectors.ts`). If scanning breaks due to website changes, update the relevant selectors file
+- **AI Prompts** - All prompt templates are in `src/main/ai/prompts.ts`. Easy to tune and improve
+- **Adding Models** - Model definitions with pricing are in `src/main/ai/ai-service.ts`
 
 ## Disclaimer
 
