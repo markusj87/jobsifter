@@ -43,6 +43,12 @@ Download the latest version for your platform:
 <summary><strong>macOS: First launch browser download</strong></summary>
 
 On macOS, the first time you click "Connect" in Scan Jobs, the app will automatically download Chromium (~170MB). This takes about a minute and only happens once. You'll see the progress in the Scanner Log. On Windows, the browser is included in the installer.
+
+If the automatic download fails, open Terminal and run:
+```bash
+cd /Applications/JobSifter.app/Contents/Resources/app.asar.unpacked/node_modules/playwright && npx playwright install chromium
+```
+Then restart the app.
 </details>
 
 <details>
