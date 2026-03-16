@@ -10,6 +10,7 @@ export default function JobDetail() {
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [scoring, setScoring] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -19,7 +20,7 @@ export default function JobDetail() {
     })
   }, [id])
 
-  const handleOpenOnLinkedIn = () => {
+  const handleOpenJob = () => {
     if (job?.jobUrl) window.open(job.jobUrl, '_blank')
   }
 
@@ -27,6 +28,19 @@ export default function JobDetail() {
     if (!job) return
     await window.api.jobs.update(job.id, { isBookmarked: !job.isBookmarked })
     setJob({ ...job, isBookmarked: !job.isBookmarked })
+  }
+
+  const handleScore = async () => {
+    if (!job || scoring) return
+    setScoring(true)
+    try {
+      const scored = await window.api.jobs.scoreOne(job.id) as Job
+      if (scored) setJob(scored)
+    } catch {
+      // silently fail
+    } finally {
+      setScoring(false)
+    }
   }
 
   const handleGenerateCoverLetter = async () => {
@@ -71,13 +85,29 @@ export default function JobDetail() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-              <button onClick={handleOpenOnLinkedIn} className="pill-button pill-button-primary" style={{ gap: '6px', fontSize: '13px', padding: '8px 18px' }}>
+              <button onClick={handleOpenJob} className="pill-button pill-button-primary" style={{ gap: '6px', fontSize: '13px', padding: '8px 18px' }}>
                 <ExternalLinkIcon size={15} />
-                Open on LinkedIn
+                Open Job
               </button>
               <button onClick={handleToggleBookmark} className="pill-button pill-button-secondary" style={{ gap: '6px', fontSize: '13px', padding: '8px 18px' }}>
                 {job.isBookmarked ? <BookmarkFilledIcon size={15} /> : <BookmarkIcon size={15} />}
                 {job.isBookmarked ? 'Bookmarked' : 'Bookmark'}
+              </button>
+              <button
+                onClick={handleScore}
+                disabled={job.matchScore !== null || scoring}
+                className="pill-button"
+                style={{
+                  gap: '6px', fontSize: '13px', padding: '8px 18px',
+                  background: job.matchScore !== null ? 'var(--color-surface-hover)' : 'var(--color-accent-soft)',
+                  color: job.matchScore !== null ? 'var(--color-text-quaternary)' : 'var(--color-accent)',
+                  border: job.matchScore !== null ? '1px solid var(--color-border)' : '1px solid rgba(0, 122, 255, 0.15)',
+                  opacity: job.matchScore !== null ? 0.5 : 1,
+                  cursor: job.matchScore !== null ? 'default' : 'pointer'
+                }}
+              >
+                <SparkleIcon size={15} />
+                {scoring ? <><span>Scoring</span><span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span></> : job.matchScore !== null ? 'Scored' : 'Score'}
               </button>
               <button
                 onClick={handleGenerateCoverLetter}
@@ -166,6 +196,7 @@ export default function JobDetail() {
             <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary)', margin: '0 0 12px 0' }}>Details</h3>
             <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
+                ['Source', (job.source || 'linkedin').charAt(0).toUpperCase() + (job.source || 'linkedin').slice(1)],
                 ['Category', job.category],
                 ['Easy Apply', job.easyApply ? 'Yes' : 'No'],
                 ['Scanned', job.scannedAt]

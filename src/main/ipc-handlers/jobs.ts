@@ -84,9 +84,9 @@ export function registerJobsHandlers(_getMainWindow: () => BrowserWindow | null)
     throw new Error('AI did not return a valid score.')
   })
 
-  /** Get the count of jobs that have not been scored yet. */
-  ipcMain.handle(IPC_CHANNELS.JOBS_UNSCORED_COUNT, () => {
-    return jobsRepo.getUnscoredJobs().length
+  /** Get the count of jobs that have not been scored yet, optionally by source. */
+  ipcMain.handle(IPC_CHANNELS.JOBS_UNSCORED_COUNT, (_, source?: string) => {
+    return jobsRepo.getUnscoredJobs(source || undefined).length
   })
 
   /** Delete all jobs, cover letters, CV feedback, and scan sessions. */
@@ -95,14 +95,14 @@ export function registerJobsHandlers(_getMainWindow: () => BrowserWindow | null)
   })
 
   /** Score all unscored jobs in batched parallel waves using AI. */
-  ipcMain.handle(IPC_CHANNELS.JOBS_SCORE_ALL, async (event) => {
+  ipcMain.handle(IPC_CHANNELS.JOBS_SCORE_ALL, async (event, source?: string) => {
     ensureAI()
 
     const cv = getCV()
     if (!cv) throw new Error('No CV uploaded. Upload your CV first.')
 
     const win = BrowserWindow.fromWebContents(event.sender)
-    const unscoredJobs = jobsRepo.getUnscoredJobs()
+    const unscoredJobs = jobsRepo.getUnscoredJobs(source || undefined)
     const total = unscoredJobs.length
 
     if (total === 0) return { scored: 0, errors: 0, total: 0, inputTokens: 0, outputTokens: 0 }

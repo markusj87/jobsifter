@@ -11,10 +11,14 @@ export const IPC_CHANNELS = {
 
   // Scanning
   SCAN_START: 'scan:start',
+  SCAN_START_LINKEDIN: 'scan:start-linkedin',
   SCAN_STOP: 'scan:stop',
   SCAN_PROGRESS: 'scan:progress',
   SCAN_LOG: 'scan:log',
   BROWSER_STATUS: 'browser:status',
+
+  // Sources
+  SOURCES_LIST: 'sources:list',
 
   // Jobs
   JOBS_GET_ALL: 'jobs:get-all',

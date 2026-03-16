@@ -1,12 +1,13 @@
 /**
- * Jobs repository - CRUD and query operations for scanned LinkedIn jobs.
+ * Jobs repository - CRUD and query operations for scanned jobs from all sources.
  */
 
 import { getDatabase } from '../database'
 import type { Job, MatchResult } from '../../../shared/types'
 
-interface InsertJobData {
-  linkedinJobId: string
+export interface InsertJobData {
+  externalId: string
+  source: string
   title: string
   company: string
   location: string
@@ -17,14 +18,15 @@ interface InsertJobData {
   category: string
 }
 
-/** Insert a new job, ignoring duplicates based on linkedin_job_id. */
-export function insertJob(data: InsertJobData): void {
+/** Insert a new job, ignoring duplicates based on external_id. Returns the internal DB id (or 0 if duplicate). */
+export function insertJob(data: InsertJobData): number {
   const db = getDatabase()
-  db.prepare(`
-    INSERT OR IGNORE INTO jobs (linkedin_job_id, title, company, location, posted_date, easy_apply, job_url, description, category)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  const result = db.prepare(`
+    INSERT OR IGNORE INTO jobs (external_id, source, title, company, location, posted_date, easy_apply, job_url, description, category)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    data.linkedinJobId,
+    data.externalId,
+    data.source,
     data.title,
     data.company,
     data.location,
@@ -34,12 +36,16 @@ export function insertJob(data: InsertJobData): void {
     data.description,
     data.category
   )
+  if (result.changes > 0) return Number(result.lastInsertRowid)
+  // Duplicate - look up existing id
+  const row = db.prepare('SELECT id FROM jobs WHERE external_id = ?').get(data.externalId) as { id: number } | undefined
+  return row?.id || 0
 }
 
-/** Check whether a job with the given LinkedIn ID already exists. */
-export function jobExists(linkedinJobId: string): boolean {
+/** Check whether a job with the given external ID already exists. */
+export function jobExists(externalId: string): boolean {
   const db = getDatabase()
-  const row = db.prepare('SELECT 1 FROM jobs WHERE linkedin_job_id = ?').get(linkedinJobId)
+  const row = db.prepare('SELECT 1 FROM jobs WHERE external_id = ?').get(externalId)
   return !!row
 }
 
@@ -56,6 +62,7 @@ interface JobFilters {
   location?: string
   easyApply?: boolean
   category?: string
+  source?: string
   isBookmarked?: boolean
   isHidden?: boolean
   sortBy?: 'match_score' | 'scanned_at' | 'company' | 'title'
@@ -89,6 +96,10 @@ export function getAllJobs(filters?: JobFilters): Job[] {
   if (filters?.category) {
     conditions.push('category = ?')
     params.push(filters.category)
+  }
+  if (filters?.source) {
+    conditions.push('source = ?')
+    params.push(filters.source)
   }
   if (filters?.isBookmarked !== undefined) {
     conditions.push('is_bookmarked = ?')
@@ -139,9 +150,13 @@ export function deleteAllJobs(): void {
   db.prepare('DELETE FROM scan_sessions').run()
 }
 
-/** Get all visible jobs that have not been scored yet. */
-export function getUnscoredJobs(): Job[] {
+/** Get all visible jobs that have not been scored yet, optionally filtered by source. */
+export function getUnscoredJobs(source?: string): Job[] {
   const db = getDatabase()
+  if (source) {
+    const rows = db.prepare('SELECT * FROM jobs WHERE match_score IS NULL AND is_hidden = 0 AND source = ?').all(source) as Record<string, unknown>[]
+    return rows.map(rowToJob)
+  }
   const rows = db.prepare('SELECT * FROM jobs WHERE match_score IS NULL AND is_hidden = 0').all() as Record<string, unknown>[]
   return rows.map(rowToJob)
 }
@@ -149,7 +164,8 @@ export function getUnscoredJobs(): Job[] {
 function rowToJob(row: Record<string, unknown>): Job {
   return {
     id: row.id as number,
-    linkedinJobId: (row.linkedin_job_id as string) || '',
+    externalId: (row.external_id as string) || (row.linkedin_job_id as string) || '',
+    source: (row.source as string) || 'linkedin',
     title: (row.title as string) || '',
     company: (row.company as string) || '',
     location: (row.location as string) || '',

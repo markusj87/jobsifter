@@ -27,7 +27,8 @@ export interface Education {
 
 export interface Job {
   id: number
-  linkedinJobId: string
+  externalId: string
+  source: string
   title: string
   company: string
   location: string
@@ -65,6 +66,7 @@ export interface ScanProgress {
   category: string
   jobsFound: number
   currentJob: string
+  jobId?: number
   status: 'scanning' | 'paused' | 'completed' | 'error'
   errorMessage?: string
 }

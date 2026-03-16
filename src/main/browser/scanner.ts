@@ -214,7 +214,8 @@ async function scanCategory(
           const details = await extractFromDetailPage(page)
 
           jobsRepo.insertJob({
-            linkedinJobId: jobId,
+            externalId: jobId,
+            source: 'linkedin',
             title: (details.title || '').substring(0, 200),
             company: (details.company || '').substring(0, 200),
             location: (details.location || '').substring(0, 200),
@@ -244,7 +245,8 @@ async function scanCategory(
           const details = await extractFromSidePanel(page)
 
           jobsRepo.insertJob({
-            linkedinJobId: jobId,
+            externalId: jobId,
+            source: 'linkedin',
             title: (details.title || '').substring(0, 200),
             company: (details.company || '').substring(0, 200),
             location: (details.location || '').substring(0, 200),

@@ -24,9 +24,15 @@ const api = {
     checkSession: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.LINKEDIN_CHECK_SESSION),
     close: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.LINKEDIN_CLOSE)
   },
+  sources: {
+    list: (): Promise<{ id: string; name: string; type: string; requiresAuth: boolean; description: string }[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SOURCES_LIST)
+  },
   scan: {
-    start: (categories: string[], customSearches?: { keywords: string; location: string }[]): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.SCAN_START, categories, customSearches),
+    start: (sourceId: string, params: { keywords?: string; location?: string; maxPages?: number; categories?: string[]; customSearches?: { keywords: string; location: string }[] }): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SCAN_START, sourceId, params),
+    startLinkedIn: (categories: string[], customSearches?: { keywords: string; location: string }[]): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SCAN_START_LINKEDIN, categories, customSearches),
     stop: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.SCAN_STOP),
     onProgress: (callback: (data: unknown) => void): (() => void) => {
       const handler = (_: unknown, data: unknown) => callback(data)
@@ -51,12 +57,12 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.JOBS_GET_ONE, id),
     update: (id: number, data: Partial<Job>): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.JOBS_UPDATE, id, data),
-    scoreAll: (): Promise<{ scored: number; errors: number; total: number; inputTokens: number; outputTokens: number }> =>
-      ipcRenderer.invoke(IPC_CHANNELS.JOBS_SCORE_ALL),
+    scoreAll: (source?: string): Promise<{ scored: number; errors: number; total: number; inputTokens: number; outputTokens: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.JOBS_SCORE_ALL, source),
     scoreOne: (jobId: number): Promise<Job> =>
       ipcRenderer.invoke(IPC_CHANNELS.JOBS_SCORE_ONE, jobId),
-    getUnscoredCount: (): Promise<number> =>
-      ipcRenderer.invoke(IPC_CHANNELS.JOBS_UNSCORED_COUNT),
+    getUnscoredCount: (source?: string): Promise<number> =>
+      ipcRenderer.invoke(IPC_CHANNELS.JOBS_UNSCORED_COUNT, source),
     deleteAll: (): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.JOBS_DELETE_ALL),
     onScoreProgress: (callback: (data: unknown) => void): (() => void) => {

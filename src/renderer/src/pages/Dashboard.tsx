@@ -146,7 +146,7 @@ export default function Dashboard() {
           <div>
             <span className="block text-[15px] font-semibold text-white">Scan Now</span>
             <span className="block text-[13px] text-white/60 mt-0.5">
-              Connect to LinkedIn and find new jobs
+              Find new jobs across multiple platforms
             </span>
           </div>
         </button>
@@ -249,7 +249,7 @@ export default function Dashboard() {
                   className="text-[14px]"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
-                  Connect LinkedIn and start scanning for jobs
+                  Start scanning for jobs across multiple platforms
                 </span>
               </div>
             </li>

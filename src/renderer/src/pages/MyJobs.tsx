@@ -39,6 +39,13 @@ function setupGlobalProgressListener() {
   })
 }
 
+const SOURCE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  linkedin: { label: 'LinkedIn', color: '#0A66C2', bg: 'rgba(10, 102, 194, 0.1)' },
+  indeed: { label: 'Indeed', color: '#2557A7', bg: 'rgba(37, 87, 167, 0.1)' },
+  platsbanken: { label: 'Platsbanken', color: '#006341', bg: 'rgba(0, 99, 65, 0.1)' },
+  remoteok: { label: 'RemoteOK', color: '#FF4742', bg: 'rgba(255, 71, 66, 0.1)' }
+}
+
 export default function MyJobs() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,6 +54,7 @@ export default function MyJobs() {
   const [showScoreConfirm, setShowScoreConfirm] = useState(false)
   const [unscoredCount, setUnscoredCount] = useState(0)
   const [estimatedCost, setEstimatedCost] = useState(0)
+  const [scoreSource, setScoreSource] = useState('')
   const [scoringJobId, setScoringJobId] = useState<number | null>(null)
   const [feedbackJobId, setFeedbackJobId] = useState<number | null>(globalFeedbackJobId)
   const [feedbackDoneJobTitles, setFeedbackDoneJobTitles] = useState<Set<string>>(new Set())
@@ -54,6 +62,7 @@ export default function MyJobs() {
   const [minScore, setMinScore] = useState(0)
   const [locationFilter, setLocationFilter] = useState('')
   const [easyApplyOnly, setEasyApplyOnly] = useState(false)
+  const [sourceFilter, setSourceFilter] = useState('')
   const [sortBy, setSortBy] = useState<'match_score' | 'scanned_at' | 'company'>('match_score')
   const navigate = useNavigate()
   const { showToast } = useToast()
@@ -65,6 +74,7 @@ export default function MyJobs() {
         minScore: minScore > 0 ? minScore : undefined,
         location: locationFilter || undefined,
         easyApply: easyApplyOnly || undefined,
+        source: sourceFilter || undefined,
         sortBy,
         sortOrder: 'desc'
       })
@@ -79,7 +89,7 @@ export default function MyJobs() {
     setFeedbackDoneJobTitles(new Set(feedbacks.map(f => `${f.jobTitle}|||${f.company}`)))
   }
 
-  useEffect(() => { loadJobs(); loadFeedbackStatus() }, [minScore, locationFilter, easyApplyOnly, sortBy])
+  useEffect(() => { loadJobs(); loadFeedbackStatus() }, [minScore, locationFilter, easyApplyOnly, sourceFilter, sortBy])
 
   useEffect(() => {
     setupGlobalProgressListener()
@@ -94,6 +104,7 @@ export default function MyJobs() {
   }, [])
 
   const handleScoreClick = async () => {
+    setScoreSource('')
     const count = await window.api.jobs.getUnscoredCount()
     if (count === 0) {
       showToast('All jobs are already scored.', 'info')
@@ -101,7 +112,6 @@ export default function MyJobs() {
     }
     setUnscoredCount(count)
 
-    // Get current model pricing
     const settings = await window.api.settings.get() as Record<string, string>
     const provider = settings?.aiProvider || 'claude'
     const modelId = settings?.aiModel || ''
@@ -115,6 +125,22 @@ export default function MyJobs() {
     setShowScoreConfirm(true)
   }
 
+  const updateScoreSource = async (source: string) => {
+    setScoreSource(source)
+    const count = await window.api.jobs.getUnscoredCount(source || undefined)
+    setUnscoredCount(count)
+
+    const settings = await window.api.settings.get() as Record<string, string>
+    const provider = settings?.aiProvider || 'claude'
+    const modelId = settings?.aiModel || ''
+    const models = await window.api.ai.getModels(provider)
+    const model = models.find((m) => m.id === modelId) || models[0]
+    if (model) {
+      const cost = (count * 800 * model.inputPricePerMTok / 1_000_000) + (count * 300 * model.outputPricePerMTok / 1_000_000)
+      setEstimatedCost(cost)
+    }
+  }
+
   const handleScoreAll = async () => {
     setShowScoreConfirm(false)
     globalScoring = true
@@ -122,7 +148,7 @@ export default function MyJobs() {
     setScoring(true)
     setScoreProgress(null)
     try {
-      const result = await window.api.jobs.scoreAll() as { scored: number; errors: number; total: number; inputTokens: number; outputTokens: number }
+      const result = await window.api.jobs.scoreAll(scoreSource || undefined) as { scored: number; errors: number; total: number; inputTokens: number; outputTokens: number }
       const totalTokens = (result.inputTokens + result.outputTokens).toLocaleString()
       showToast(`Scored ${result.scored} jobs | ${totalTokens} tokens used${result.errors > 0 ? ` | ${result.errors} errors` : ''}`, result.errors > 0 ? 'info' : 'success')
     } catch (err) {
@@ -173,6 +199,21 @@ export default function MyJobs() {
         title={`Score ${unscoredCount} unscored jobs?`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+            <span style={{ color: 'var(--color-text-secondary)' }}>Source</span>
+            <select
+              value={scoreSource}
+              onChange={(e) => updateScoreSource(e.target.value)}
+              className="apple-select"
+              style={{ fontSize: '13px', padding: '5px 28px 5px 10px' }}
+            >
+              <option value="">All Sources</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="indeed">Indeed</option>
+              <option value="platsbanken">Platsbanken</option>
+              <option value="remoteok">RemoteOK</option>
+            </select>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
             <span style={{ color: 'var(--color-text-secondary)' }}>Jobs to score</span>
             <span style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{unscoredCount}</span>
@@ -273,6 +314,21 @@ export default function MyJobs() {
 
         <div style={{ width: '1px', height: '20px', background: 'var(--color-border-light)' }} />
 
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="apple-select"
+          style={{ fontSize: '13px', padding: '7px 32px 7px 12px' }}
+        >
+          <option value="">All Sources</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="indeed">Indeed</option>
+          <option value="platsbanken">Platsbanken</option>
+          <option value="remoteok">RemoteOK</option>
+        </select>
+
+        <div style={{ width: '1px', height: '20px', background: 'var(--color-border-light)' }} />
+
         <button
           onClick={() => setEasyApplyOnly(!easyApplyOnly)}
           className={`apple-toggle ${easyApplyOnly ? 'active' : ''}`}
@@ -306,133 +362,145 @@ export default function MyJobs() {
         <div className="glass-card-solid" style={{ overflow: 'hidden' }}>
           {/* Table header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '72px 1fr 140px 120px 75px 55px 260px',
+            display: 'grid', gridTemplateColumns: '72px 1fr 140px 120px 90px 75px 55px 260px',
             padding: '10px 20px', borderBottom: '1px solid var(--color-border-light)',
             background: 'var(--color-surface)'
           }}>
-            {['Score', 'Title', 'Company', 'Location', 'Category', 'Easy', 'Actions'].map((h) => (
+            {['Score', 'Title', 'Company', 'Location', 'Source', 'Category', 'Easy', 'Actions'].map((h) => (
               <span key={h} style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
           </div>
 
           {/* Table rows */}
           <div>
-            {filteredJobs.map((job, i) => (
-              <div
-                key={job.id}
-                onClick={() => navigate(`/jobs/${job.id}`)}
-                style={{
-                  display: 'grid', gridTemplateColumns: '72px 1fr 140px 120px 75px 55px 260px',
-                  padding: '12px 20px', alignItems: 'center',
-                  borderBottom: i < filteredJobs.length - 1 ? '1px solid var(--color-border-light)' : 'none',
-                  cursor: 'pointer', transition: 'background 0.15s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-              >
-                <span
+            {filteredJobs.map((job, i) => {
+              const sourceInfo = SOURCE_LABELS[job.source] || { label: job.source, color: 'var(--color-text-quaternary)', bg: 'var(--color-surface-hover)' }
+              return (
+                <div
+                  key={job.id}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
                   style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '3px 10px', borderRadius: '980px',
-                    fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums',
-                    ...scoreStyle(job.matchScore)
+                    display: 'grid', gridTemplateColumns: '72px 1fr 140px 120px 90px 75px 55px 260px',
+                    padding: '12px 20px', alignItems: 'center',
+                    borderBottom: i < filteredJobs.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                    cursor: 'pointer', transition: 'background 0.15s'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                 >
-                  {job.matchScore ?? '--'}
-                </span>
-                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '12px' }}>{job.title}</span>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.company}</span>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.location}</span>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-quaternary)' }}>{job.category}</span>
-                <span>
-                  {job.easyApply && (
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-green-text)', background: 'var(--color-green-soft)', padding: '2px 8px', borderRadius: '980px' }}>Easy</span>
-                  )}
-                </span>
-                <span style={{ display: 'flex', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
-                  <button
-                    disabled={job.matchScore !== null || scoringJobId === job.id}
-                    onClick={async (e) => {
-                      e.stopPropagation()
-                      setScoringJobId(job.id)
-                      try {
-                        await window.api.jobs.scoreOne(job.id)
-                        loadJobs()
-                        showToast(`Scored: ${job.title}`, 'success')
-                      } catch (err) {
-                        showToast(`Score failed: ${err instanceof Error ? err.message : 'Error'}`, 'error')
-                      } finally {
-                        setScoringJobId(null)
-                      }
-                    }}
+                  <span
                     style={{
-                      padding: '3px 8px', borderRadius: '980px', border: 'none', cursor: job.matchScore !== null ? 'default' : 'pointer',
-                      fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
-                      background: job.matchScore !== null ? 'var(--color-surface-hover)' : 'var(--color-accent-soft)',
-                      color: job.matchScore !== null ? 'var(--color-text-quaternary)' : 'var(--color-accent)',
-                      opacity: job.matchScore !== null ? 0.5 : 1,
-                      transition: 'all 0.15s'
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '3px 10px', borderRadius: '980px',
+                      fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+                      ...scoreStyle(job.matchScore)
                     }}
                   >
-                    <SparkleIcon size={10} />
-                    {scoringJobId === job.id ? <span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span> : 'Score'}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      window.open(job.jobUrl, '_blank')
-                    }}
-                    style={{
-                      padding: '3px 8px', borderRadius: '980px', border: 'none', cursor: 'pointer',
-                      fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
-                      background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-accent-soft)'; e.currentTarget.style.color = 'var(--color-accent)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
-                  >
-                    <ExternalLinkIcon size={10} />
-                    Open
-                  </button>
-                  <button
-                    disabled={feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)}
-                    onClick={async (e) => {
-                      e.stopPropagation()
-                      globalFeedbackJobId = job.id
-                      setFeedbackJobId(job.id)
-                      notifyScoreListeners()
-                      try {
-                        const result = await window.api.cvFeedback.generateFromJob(job.id) as { id: number }
-                        showToast('Resume feedback generated!', 'success')
-                        loadFeedbackStatus()
-                        navigate(`/cv-feedback/${result.id}`)
-                      } catch (err) {
-                        showToast(`Feedback failed: ${err instanceof Error ? err.message : 'Error'}`, 'error')
-                      } finally {
-                        globalFeedbackJobId = null
-                        setFeedbackJobId(null)
+                    {job.matchScore ?? '--'}
+                  </span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '12px' }}>{job.title}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.company}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.location}</span>
+                  <span>
+                    <span style={{
+                      fontSize: '11px', fontWeight: 600,
+                      color: sourceInfo.color, background: sourceInfo.bg,
+                      padding: '2px 8px', borderRadius: '980px'
+                    }}>
+                      {sourceInfo.label}
+                    </span>
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-quaternary)' }}>{job.category}</span>
+                  <span>
+                    {job.easyApply && (
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-green-text)', background: 'var(--color-green-soft)', padding: '2px 8px', borderRadius: '980px' }}>Easy</span>
+                    )}
+                  </span>
+                  <span style={{ display: 'flex', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      disabled={job.matchScore !== null || scoringJobId === job.id}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        setScoringJobId(job.id)
+                        try {
+                          await window.api.jobs.scoreOne(job.id)
+                          loadJobs()
+                          showToast(`Scored: ${job.title}`, 'success')
+                        } catch (err) {
+                          showToast(`Score failed: ${err instanceof Error ? err.message : 'Error'}`, 'error')
+                        } finally {
+                          setScoringJobId(null)
+                        }
+                      }}
+                      style={{
+                        padding: '3px 8px', borderRadius: '980px', border: 'none', cursor: job.matchScore !== null ? 'default' : 'pointer',
+                        fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        background: job.matchScore !== null ? 'var(--color-surface-hover)' : 'var(--color-accent-soft)',
+                        color: job.matchScore !== null ? 'var(--color-text-quaternary)' : 'var(--color-accent)',
+                        opacity: job.matchScore !== null ? 0.5 : 1,
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <SparkleIcon size={10} />
+                      {scoringJobId === job.id ? <span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span> : 'Score'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(job.jobUrl, '_blank')
+                      }}
+                      style={{
+                        padding: '3px 8px', borderRadius: '980px', border: 'none', cursor: 'pointer',
+                        fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-accent-soft)'; e.currentTarget.style.color = 'var(--color-accent)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
+                    >
+                      <ExternalLinkIcon size={10} />
+                      Open
+                    </button>
+                    <button
+                      disabled={feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        globalFeedbackJobId = job.id
+                        setFeedbackJobId(job.id)
                         notifyScoreListeners()
-                      }
-                    }}
-                    style={{
-                      padding: '3px 8px', borderRadius: '980px', border: 'none',
-                      cursor: (feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)) ? 'default' : 'pointer',
-                      fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
-                      whiteSpace: 'nowrap',
-                      background: feedbackDoneJobTitles.has(`${job.title}|||${job.company}`) ? 'var(--color-surface-hover)' : 'var(--color-purple-soft)',
-                      color: feedbackDoneJobTitles.has(`${job.title}|||${job.company}`) ? 'var(--color-text-quaternary)' : 'var(--color-purple)',
-                      opacity: (feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)) ? 0.5 : 1,
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <SparkleIcon size={10} />
-                    {feedbackJobId === job.id
-                      ? <span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span>
-                      : 'Resume Feedback'}
-                  </button>
-                </span>
-              </div>
-            ))}
+                        try {
+                          const result = await window.api.cvFeedback.generateFromJob(job.id) as { id: number }
+                          showToast('Resume feedback generated!', 'success')
+                          loadFeedbackStatus()
+                          navigate(`/cv-feedback/${result.id}`)
+                        } catch (err) {
+                          showToast(`Feedback failed: ${err instanceof Error ? err.message : 'Error'}`, 'error')
+                        } finally {
+                          globalFeedbackJobId = null
+                          setFeedbackJobId(null)
+                          notifyScoreListeners()
+                        }
+                      }}
+                      style={{
+                        padding: '3px 8px', borderRadius: '980px', border: 'none',
+                        cursor: (feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)) ? 'default' : 'pointer',
+                        fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        whiteSpace: 'nowrap',
+                        background: feedbackDoneJobTitles.has(`${job.title}|||${job.company}`) ? 'var(--color-surface-hover)' : 'var(--color-purple-soft)',
+                        color: feedbackDoneJobTitles.has(`${job.title}|||${job.company}`) ? 'var(--color-text-quaternary)' : 'var(--color-purple)',
+                        opacity: (feedbackJobId === job.id || feedbackDoneJobTitles.has(`${job.title}|||${job.company}`)) ? 0.5 : 1,
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <SparkleIcon size={10} />
+                      {feedbackJobId === job.id
+                        ? <span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span>
+                        : 'Resume Feedback'}
+                    </button>
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
