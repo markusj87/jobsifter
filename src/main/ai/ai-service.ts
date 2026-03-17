@@ -1,10 +1,12 @@
 /**
- * AI service abstraction supporting Claude and OpenAI providers.
+ * AI service abstraction supporting Claude, OpenAI, Gemini, and Mistral providers.
  * Handles provider configuration, prompt completion, and token tracking.
  */
 
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
+import { Mistral } from '@mistralai/mistralai'
 import type { AIProvider } from '../../shared/types'
 import { getSetting } from '../database/repositories/settings'
 
@@ -69,6 +71,54 @@ class OpenAIProvider implements AIProviderInterface {
   }
 }
 
+class GeminiProvider implements AIProviderInterface {
+  private ai: GoogleGenAI
+  private model: string
+
+  constructor(apiKey: string, model: string) {
+    this.ai = new GoogleGenAI({ apiKey })
+    this.model = model
+  }
+
+  async complete(prompt: string): Promise<{ text: string; usage: TokenUsage }> {
+    const response = await this.ai.models.generateContent({
+      model: this.model,
+      contents: prompt
+    })
+    return {
+      text: response.text || '',
+      usage: {
+        inputTokens: response.usageMetadata?.promptTokenCount || 0,
+        outputTokens: response.usageMetadata?.candidatesTokenCount || 0
+      }
+    }
+  }
+}
+
+class MistralProvider implements AIProviderInterface {
+  private client: Mistral
+  private model: string
+
+  constructor(apiKey: string, model: string) {
+    this.client = new Mistral({ apiKey })
+    this.model = model
+  }
+
+  async complete(prompt: string): Promise<{ text: string; usage: TokenUsage }> {
+    const response = await this.client.chat.complete({
+      model: this.model,
+      messages: [{ role: 'user', content: prompt }]
+    })
+    return {
+      text: response.choices?.[0]?.message?.content as string || '',
+      usage: {
+        inputTokens: response.usage?.promptTokens || 0,
+        outputTokens: response.usage?.completionTokens || 0
+      }
+    }
+  }
+}
+
 /**
  * Singleton AI service that manages provider configuration and prompt completion.
  * Tracks cumulative token usage across calls for cost reporting.
@@ -84,6 +134,10 @@ class AIService {
       this.provider = new ClaudeProvider(apiKey, model || 'claude-sonnet-4-6-20250627')
     } else if (providerType === 'openai') {
       this.provider = new OpenAIProvider(apiKey, model || 'gpt-5.4')
+    } else if (providerType === 'gemini') {
+      this.provider = new GeminiProvider(apiKey, model || 'gemini-2.5-flash')
+    } else if (providerType === 'mistral') {
+      this.provider = new MistralProvider(apiKey, model || 'mistral-small-latest')
     } else {
       this.provider = null
     }
@@ -129,7 +183,7 @@ export function ensureAI(): void {
     }
   }
   if (!aiService.isConfigured()) {
-    throw new Error('AI provider not configured. Go to Settings and connect Claude or OpenAI first.')
+    throw new Error('AI provider not configured. Go to Settings and connect an AI provider first.')
   }
 }
 
@@ -162,4 +216,22 @@ export const OPENAI_MODELS: ModelInfo[] = [
   { id: 'gpt-4.1', name: 'GPT-4.1', inputPricePerMTok: 3, outputPricePerMTok: 12 },
   { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', inputPricePerMTok: 0.8, outputPricePerMTok: 3.2 },
   { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano (cheapest)', inputPricePerMTok: 0.2, outputPricePerMTok: 0.8 }
+]
+
+/** Available Google Gemini model options with pricing. */
+export const GEMINI_MODELS: ModelInfo[] = [
+  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro Preview (most capable)', inputPricePerMTok: 2, outputPricePerMTok: 12 },
+  { id: 'gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash-Lite Preview', inputPricePerMTok: 0.25, outputPricePerMTok: 1.5 },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', inputPricePerMTok: 1.25, outputPricePerMTok: 10 },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (fast, cheap)', inputPricePerMTok: 0.3, outputPricePerMTok: 2.5 },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite (cheapest)', inputPricePerMTok: 0.1, outputPricePerMTok: 0.4 }
+]
+
+/** Available Mistral model options with pricing. */
+export const MISTRAL_MODELS: ModelInfo[] = [
+  { id: 'mistral-large-latest', name: 'Mistral Large (most capable)', inputPricePerMTok: 0.5, outputPricePerMTok: 1.5 },
+  { id: 'magistral-medium-latest', name: 'Magistral Medium (reasoning)', inputPricePerMTok: 2, outputPricePerMTok: 5 },
+  { id: 'mistral-medium-latest', name: 'Mistral Medium 3', inputPricePerMTok: 0.4, outputPricePerMTok: 2 },
+  { id: 'mistral-small-latest', name: 'Mistral Small (fast, cheap)', inputPricePerMTok: 0.1, outputPricePerMTok: 0.3 },
+  { id: 'ministral-8b-latest', name: 'Ministral 8B (cheapest)', inputPricePerMTok: 0.1, outputPricePerMTok: 0.1 }
 ]

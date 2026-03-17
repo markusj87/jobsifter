@@ -8,7 +8,7 @@ import { join } from 'path'
 import { IPC_CHANNELS } from '../../shared/ipc'
 import { getSetting, setSetting, getAllSettings } from '../database/repositories/settings'
 import { closeDatabase } from '../database/database'
-import { aiService, CLAUDE_MODELS, OPENAI_MODELS } from '../ai/ai-service'
+import { aiService, CLAUDE_MODELS, OPENAI_MODELS, GEMINI_MODELS, MISTRAL_MODELS } from '../ai/ai-service'
 import type { AIProvider } from '../../shared/types'
 
 /** Register IPC handlers for settings get/set and AI model listing. */
@@ -36,6 +36,8 @@ export function registerSettingsHandlers(_getMainWindow: () => BrowserWindow | n
   ipcMain.handle(IPC_CHANNELS.AI_GET_MODELS, (_, provider: AIProvider) => {
     if (provider === 'claude') return CLAUDE_MODELS
     if (provider === 'openai') return OPENAI_MODELS
+    if (provider === 'gemini') return GEMINI_MODELS
+    if (provider === 'mistral') return MISTRAL_MODELS
     return []
   })
 

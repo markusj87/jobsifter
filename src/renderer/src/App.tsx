@@ -78,11 +78,11 @@ function DisclaimerDialog({ onAccept }: { onAccept: () => void }) {
 
         <p style={h3Style}>4. AI Services &amp; API Cost Responsibility</p>
         <p style={pStyle}>
-          JobSifter integrates with third-party AI services, including but not limited to OpenAI and Anthropic (Claude). To use these AI features, you must provide your own API keys and maintain your own accounts with these providers.
+          JobSifter integrates with third-party AI services, including but not limited to OpenAI, Anthropic (Claude), Google (Gemini), and Mistral. To use these AI features, you must provide your own API keys and maintain your own accounts with these providers.
         </p>
         <ul style={ulStyle}>
           <li style={liStyle}>The token usage and cost estimates displayed within JobSifter are <strong>approximations only</strong>. They may not reflect current pricing, actual billed amounts, or exact token counts.</li>
-          <li style={liStyle}>You are <strong>solely responsible</strong> for monitoring your API usage, token consumption, and associated costs on your OpenAI, Anthropic, or any other AI provider account.</li>
+          <li style={liStyle}>You are <strong>solely responsible</strong> for monitoring your API usage, token consumption, and associated costs on your OpenAI, Anthropic, Google, Mistral, or any other AI provider account.</li>
           <li style={liStyle}>The developers of JobSifter are <strong>not liable</strong> for any charges, overages, or unexpected costs incurred through your use of third-party API services.</li>
           <li style={liStyle}>We strongly recommend setting spending limits and usage alerts directly on your AI provider accounts.</li>
         </ul>
@@ -108,7 +108,7 @@ function DisclaimerDialog({ onAccept }: { onAccept: () => void }) {
           JobSifter runs entirely on your local machine. We do not collect, transmit, or store any of your personal data, resumes, job search activity, or API keys. All data remains on your device.
         </p>
         <p style={pStyle}>
-          However, when you use AI features, your data (such as resume text and job descriptions) is sent to the third-party AI provider you have configured (e.g., OpenAI or Anthropic) according to their respective privacy policies and terms of service. You should review these policies independently.
+          However, when you use AI features, your data (such as resume text and job descriptions) is sent to the third-party AI provider you have configured (e.g., OpenAI, Anthropic, Google, or Mistral) according to their respective privacy policies and terms of service. You should review these policies independently.
         </p>
 
         <p style={h3Style}>8. AI-Generated Content</p>
@@ -126,7 +126,7 @@ function DisclaimerDialog({ onAccept }: { onAccept: () => void }) {
 
         <p style={h3Style}>10. Third-Party Services</p>
         <p style={pStyle}>
-          JobSifter interacts with third-party services including job boards (LinkedIn, Indeed, Platsbanken, RemoteOK) and AI providers (OpenAI, Anthropic). These services have their own terms of use and privacy policies. The developers of JobSifter have no control over, and assume no responsibility for, the content, policies, or practices of any third-party services.
+          JobSifter interacts with third-party services including job boards (LinkedIn, Indeed, Platsbanken, RemoteOK) and AI providers (OpenAI, Anthropic, Google, Mistral). These services have their own terms of use and privacy policies. The developers of JobSifter have no control over, and assume no responsibility for, the content, policies, or practices of any third-party services.
         </p>
 
         <p style={h3Style}>11. Changes to These Terms</p>

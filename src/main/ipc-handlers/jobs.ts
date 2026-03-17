@@ -7,6 +7,7 @@ import { IPC_CHANNELS } from '../../shared/ipc'
 import * as jobsRepo from '../database/repositories/jobs'
 import { getCV } from '../database/repositories/cv'
 import { ensureAI, aiService } from '../ai/ai-service'
+import { getSetting } from '../database/repositories/settings'
 import { JOB_MATCH_BATCH_PROMPT, formatPrompt, formatCVForPrompt } from '../ai/prompts'
 import { parseJsonArray } from '../ai/parse-ai-response'
 
@@ -57,9 +58,11 @@ export function registerJobsHandlers(_getMainWindow: () => BrowserWindow | null)
       description: job.description.substring(0, 2000)
     }]
 
+    const language = getSetting('aiLanguage') || 'English'
     const prompt = formatPrompt(JOB_MATCH_BATCH_PROMPT, {
       cv_data: cvSummary,
-      jobs_json: JSON.stringify(jobsForPrompt, null, 2)
+      jobs_json: JSON.stringify(jobsForPrompt, null, 2),
+      language
     })
 
     const response = await aiService.complete(prompt)
@@ -123,6 +126,7 @@ export function registerJobsHandlers(_getMainWindow: () => BrowserWindow | null)
     const BATCH_SIZE = 10
     const PARALLEL = 5
     const cvSummary = formatCVForPrompt(cv)
+    const language = getSetting('aiLanguage') || 'English'
     let scored = 0
     let errors = 0
 
@@ -146,7 +150,8 @@ export function registerJobsHandlers(_getMainWindow: () => BrowserWindow | null)
       try {
         const prompt = formatPrompt(JOB_MATCH_BATCH_PROMPT, {
           cv_data: cvSummary,
-          jobs_json: JSON.stringify(jobsForPrompt, null, 2)
+          jobs_json: JSON.stringify(jobsForPrompt, null, 2),
+          language
         })
 
         const response = await aiService.complete(prompt)

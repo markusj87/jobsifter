@@ -8,6 +8,7 @@ import { PDFParse } from 'pdf-parse'
 import { IPC_CHANNELS } from '../../shared/ipc'
 import { getCV, upsertCV } from '../database/repositories/cv'
 import { ensureAI, aiService } from '../ai/ai-service'
+import { getSetting } from '../database/repositories/settings'
 import { CV_PARSE_PROMPT, formatPrompt } from '../ai/prompts'
 import { parseJsonObject } from '../ai/parse-ai-response'
 import type { ParsedCV } from '../../shared/types'
@@ -60,7 +61,8 @@ export function registerCvHandlers(_getMainWindow: () => BrowserWindow | null): 
 
     // Use AI to parse the CV
     console.log('[CV Upload] Sending to AI for parsing...')
-    const prompt = formatPrompt(CV_PARSE_PROMPT, { raw_text: rawText })
+    const language = getSetting('aiLanguage') || 'English'
+    const prompt = formatPrompt(CV_PARSE_PROMPT, { raw_text: rawText, language })
     const aiResponse = await aiService.complete(prompt)
 
     const parsed = parseJsonObject(aiResponse)

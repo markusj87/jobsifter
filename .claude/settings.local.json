@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:docs.mistral.ai)",
+      "WebFetch(domain:mistral.ai)",
+      "WebFetch(domain:pricepertoken.com)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

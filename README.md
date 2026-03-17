@@ -5,6 +5,7 @@
     Stop wasting time on jobs you won't get. Focus on the ones that actually match you.
   </p>
   <p align="center">
+    <a href="https://jobsifter.eu/">Website</a> &middot;
     <a href="#features">Features</a> &middot;
     <a href="#getting-started">Getting Started</a> &middot;
     <a href="#architecture">Architecture</a> &middot;
@@ -25,7 +26,7 @@ JobSifter was built to fix that. It does the tedious part for you:
 - **Tells you which jobs actually match you** - AI analyzes every job against your CV and gives you a match score, so you can skip the 30% matches and focus on the 85% ones
 - **Generates cover letters from your real experience** - when you find a great match, AI writes a personalized cover letter based on your actual CV and the specific job description. No generic templates
 
-The app is **100% free**, **open source** under the GPL-3.0 license, and runs entirely on your own computer. The only cost is the AI API usage from the provider you choose (Claude or OpenAI) using your own account - and the app shows you estimated costs before every scoring run so there are no surprises. Scoring 100 jobs typically costs between $0.04 and $0.69 depending on model. Your CV and data never leave your machine (except to the AI provider for analysis). No accounts with us, no subscriptions, no data collection.
+The app is **100% free**, **open source** under the GPL-3.0 license, and runs entirely on your own computer. The only cost is the AI API usage from the provider you choose (Claude, OpenAI, Gemini, or Mistral) using your own account - and the app shows you estimated costs before every scoring run so there are no surprises. Scoring 100 jobs typically costs between $0.04 and $0.69 depending on model. Your CV and data never leave your machine (except to the AI provider for analysis). No accounts with us, no subscriptions, no data collection.
 
 ## Download
 
@@ -37,7 +38,7 @@ Download the latest version for your platform:
 | macOS (Intel) | [JobSifter-x64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-x64.dmg) |
 | macOS (Apple Silicon) | [JobSifter-arm64.dmg](https://github.com/markusj87/jobsifter/releases/latest/download/JobSifter-arm64.dmg) |
 
-> After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) for the AI features.
+> After downloading, you'll also need an API key from [Anthropic (Claude)](https://console.anthropic.com/), [OpenAI](https://platform.openai.com/), [Google (Gemini)](https://aistudio.google.com/apikey), or [Mistral](https://console.mistral.ai/api-keys) for the AI features.
 
 <details>
 <summary><strong>macOS: First launch browser download</strong></summary>
@@ -65,6 +66,15 @@ If you built the app yourself from a fork or from source, macOS will block it si
 xattr -cr /Applications/JobSifter.app
 ```
 Then open the app normally. This only needs to be done once.
+</details>
+
+<details>
+<summary><strong>Windows: SmartScreen warning on first install</strong></summary>
+
+The first time you run JobSifter on Windows, you may see a "Windows protected your PC" SmartScreen warning. This happens because the app is not yet widely distributed enough to have built up reputation with Microsoft's SmartScreen filter.
+
+To proceed: click **More info**, then click **Run anyway**. This only happens once — subsequent launches will open normally.
+
 </details>
 
 ## Features
@@ -116,7 +126,7 @@ JobSifter supports four job platforms, each with its own tab in Scan Jobs:
 |------------|---------|
 | Node.js | 18+ |
 | npm | 9+ |
-| API Key | [Anthropic (Claude)](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/) |
+| API Key | [Anthropic (Claude)](https://console.anthropic.com/), [OpenAI](https://platform.openai.com/), [Google (Gemini)](https://aistudio.google.com/apikey), or [Mistral](https://console.mistral.ai/api-keys) |
 
 ### Installation
 
@@ -156,7 +166,7 @@ npm run dist
 
 ### Step-by-step
 
-1. **Connect AI** - Go to Settings, select Claude or OpenAI, enter your API key, choose a model
+1. **Connect AI** - Go to Settings, select Claude, OpenAI, Gemini, or Mistral, enter your API key, choose a model
 2. **Upload CV** - Go to Resume, upload your PDF. AI parses it into structured data with a detailed candidate profile
 3. **Scan Jobs** - Go to Scan Jobs, pick a source tab (LinkedIn, Indeed, Platsbanken, or RemoteOK), enter search criteria, hit Start Scan
 4. **Review Matches** - Go to My Jobs, click Score All. Filter by source if needed. AI scores every job in parallel batches. Sort and filter by score
@@ -216,7 +226,7 @@ Results saved to SQLite, UI updates progressively
 | Styling | Tailwind CSS v4 |
 | Browser Automation | Playwright |
 | Database | SQLite (better-sqlite3) |
-| AI | Anthropic Claude SDK / OpenAI SDK |
+| AI | Anthropic Claude SDK / OpenAI SDK / Google Gemini SDK / Mistral SDK |
 | PDF Generation | Playwright page.pdf() |
 | Installer | electron-builder |
 
@@ -249,7 +259,7 @@ src/
       remoteok/
         index.ts                 # RemoteOK source (JSON API)
     ai/
-      ai-service.ts              # AI provider abstraction (Claude/OpenAI), token tracking
+      ai-service.ts              # AI provider abstraction (Claude/OpenAI/Gemini/Mistral), token tracking
       prompts.ts                 # All AI prompt templates
       parse-ai-response.ts       # JSON parsing utilities
     browser/
@@ -375,6 +385,26 @@ settings (key, value)
 | GPT-4.1 Mini | $0.80 | $3.20 | Budget |
 | GPT-4.1 Nano | $0.20 | $0.80 | Cheapest |
 
+### Google Gemini
+
+| Model | Input $/MTok | Output $/MTok | Best For |
+|-------|-------------|--------------|----------|
+| Gemini 3.1 Pro Preview | $2.00 | $12.00 | Most capable |
+| Gemini 3.1 Flash-Lite Preview | $0.25 | $1.50 | Latest gen, budget |
+| Gemini 2.5 Pro | $1.25 | $10.00 | Stable, capable |
+| Gemini 2.5 Flash | $0.30 | $2.50 | Fast, cheap |
+| Gemini 2.5 Flash-Lite | $0.10 | $0.40 | Cheapest |
+
+### Mistral
+
+| Model | Input $/MTok | Output $/MTok | Best For |
+|-------|-------------|--------------|----------|
+| Mistral Large | $0.50 | $1.50 | Most capable |
+| Magistral Medium | $2.00 | $5.00 | Reasoning tasks |
+| Mistral Medium 3 | $0.40 | $2.00 | Good balance |
+| Mistral Small | $0.10 | $0.30 | Fast, cheap |
+| Ministral 8B | $0.10 | $0.10 | Cheapest |
+
 *Pricing as of March 2026. The app shows cost estimates in Settings and before scoring.*
 
 ## Cost Estimates
@@ -383,8 +413,12 @@ Scoring 100 jobs typically uses ~110,000 tokens. Approximate costs:
 
 | Model | Cost per 100 jobs |
 |-------|-------------------|
+| Ministral 8B | ~$0.02 |
+| Gemini 2.5 Flash-Lite | ~$0.02 |
 | GPT-4.1 Nano | ~$0.04 |
 | GPT-5 Mini | ~$0.04 |
+| Mistral Small | ~$0.04 |
+| Gemini 2.5 Flash | ~$0.11 |
 | Claude Haiku 4.5 | ~$0.23 |
 | Claude Sonnet 4.6 | ~$0.69 |
 | GPT-5.4 | ~$0.65 |

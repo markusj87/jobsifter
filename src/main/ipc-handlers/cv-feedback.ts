@@ -8,6 +8,7 @@ import { getCV } from '../database/repositories/cv'
 import * as jobsRepo from '../database/repositories/jobs'
 import * as cvFeedbackRepo from '../database/repositories/cv-feedback'
 import { ensureAI, aiService } from '../ai/ai-service'
+import { getSetting } from '../database/repositories/settings'
 import { CV_FEEDBACK_PROMPT, CV_FEEDBACK_JOB_PROMPT, formatPrompt, formatCVForPrompt } from '../ai/prompts'
 
 /** Register IPC handlers for CV feedback generation, listing, detail, and deletion. */
@@ -18,10 +19,12 @@ export function registerCvFeedbackHandlers(_getMainWindow: () => BrowserWindow |
     const cv = getCV()
     if (!cv) throw new Error('No CV uploaded.')
 
+    const language = getSetting('aiLanguage') || 'English'
     const prompt = formatPrompt(CV_FEEDBACK_PROMPT, {
       cv_data: formatCVForPrompt(cv),
       job_title: jobTitle,
-      company: company
+      company: company,
+      language
     })
 
     const feedback = await aiService.complete(prompt)
@@ -37,11 +40,13 @@ export function registerCvFeedbackHandlers(_getMainWindow: () => BrowserWindow |
     const job = jobsRepo.getJob(jobId)
     if (!job) throw new Error('Job not found.')
 
+    const language = getSetting('aiLanguage') || 'English'
     const prompt = formatPrompt(CV_FEEDBACK_JOB_PROMPT, {
       cv_data: formatCVForPrompt(cv),
       job_title: job.title,
       company: job.company,
-      job_description: job.description
+      job_description: job.description,
+      language
     })
 
     const feedback = await aiService.complete(prompt)

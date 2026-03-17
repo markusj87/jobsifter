@@ -43,7 +43,8 @@ Rules:
 - For experience, include ALL positions, most recent first
 - If a field is not found, use an empty string or empty array
 - Keep descriptions concise but include key achievements and numbers
-- Parse dates as they appear in the original text`
+- Parse dates as they appear in the original text
+- Write the "summary" field in {language}. All other fields (name, skills, titles, etc.) should remain in their original language.`
 
 export const JOB_MATCH_BATCH_PROMPT = `You are a recruitment analyst. Given this candidate's CV and multiple job descriptions, analyze the fit for EACH job.
 
@@ -73,6 +74,8 @@ The "advice" field should contain 3-5 specific, actionable interview tips for th
 - Suggest concrete talking points, stories, or questions to prepare
 Be specific to the actual CV and job, not generic advice.
 
+Write all text values (fit_summary, strengths, gaps, advice) in {language}.
+
 Respond ONLY with the JSON array, no other text.`
 
 export const COVER_LETTER_PROMPT = `Write a cover letter for this job application. The letter should:
@@ -82,11 +85,13 @@ export const COVER_LETTER_PROMPT = `Write a cover letter for this job applicatio
 3. Lead with the strongest matching experience
 4. Include concrete numbers and achievements from the CV that are relevant
 5. Be concise (4-6 paragraphs)
-6. Start with "Hi," not "Dear Hiring Manager"
+6. Start with an appropriate informal greeting (e.g. "Hi," in English, "Hej," in Swedish, etc.)
 7. End with "Best regards," and the candidate's name
 8. Never use em-dashes, "however", "moreover", "furthermore", "leverage", "robust", "seamless", or other overused AI words
 9. Use "but" instead of "however", "also" instead of "moreover", "so" instead of "therefore"
 10. State things directly rather than using "it's not X, but Y" constructions
+11. Write the ENTIRE cover letter in {language}. Every word must be in {language}.
+12. Use a {tone} tone throughout the letter.
 
 Candidate CV:
 {cv_data}
@@ -132,7 +137,9 @@ How to tailor the CV specifically for {company}. Consider:
 ## Interview Preparation
 3-5 things the candidate should prepare to discuss based on gaps or areas where the CV might raise questions.
 
-Be direct and specific. Reference actual content from the CV. Do not give generic advice. Do NOT offer to do additional work like rewriting the CV, drafting cover letters, or any follow-up tasks. Only provide the feedback sections above.`
+Be direct and specific. Reference actual content from the CV. Do not give generic advice. Do NOT offer to do additional work like rewriting the CV, drafting cover letters, or any follow-up tasks. Only provide the feedback sections above.
+
+IMPORTANT: Write ALL feedback in {language}.`
 
 export const CV_FEEDBACK_JOB_PROMPT = `You are an expert career coach and CV reviewer. A candidate wants to apply for a specific role. You have their CV AND the full job description. Review the CV and provide detailed, actionable feedback to maximize their chances for this exact position.
 
@@ -171,7 +178,9 @@ How to restructure or reword the CV specifically for this application:
 ## Interview Preparation
 5 specific things the candidate should prepare to discuss based on the gaps between their CV and this job description. Include potential interview questions they might face.
 
-Be direct and specific. Reference actual content from both the CV and job description. Do not give generic advice. Do NOT offer to do additional work like rewriting the CV, drafting cover letters, or any follow-up tasks. Only provide the feedback sections above.`
+Be direct and specific. Reference actual content from both the CV and job description. Do not give generic advice. Do NOT offer to do additional work like rewriting the CV, drafting cover letters, or any follow-up tasks. Only provide the feedback sections above.
+
+IMPORTANT: Write ALL feedback in {language}.`
 
 /** Replace `{key}` placeholders in a prompt template with provided values. */
 export function formatPrompt(template: string, vars: Record<string, string>): string {

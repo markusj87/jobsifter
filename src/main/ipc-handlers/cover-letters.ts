@@ -14,7 +14,7 @@ import { generateCoverLetterPDF } from '../pdf/pdf-generator'
 /** Register IPC handlers for cover letter generation, retrieval, update, delete, and PDF export. */
 export function registerCoverLettersHandlers(_getMainWindow: () => BrowserWindow | null): void {
   /** Generate a new cover letter for a job using AI. */
-  ipcMain.handle(IPC_CHANNELS.AI_GENERATE_COVER_LETTER, async (_, jobId: number) => {
+  ipcMain.handle(IPC_CHANNELS.AI_GENERATE_COVER_LETTER, async (_, jobId: number, language?: string, tone?: string) => {
     ensureAI()
 
     const job = jobsRepo.getJob(jobId)
@@ -25,7 +25,9 @@ export function registerCoverLettersHandlers(_getMainWindow: () => BrowserWindow
       cv_data: formatCVForPrompt(cv),
       job_description: job.description,
       company: job.company,
-      job_title: job.title
+      job_title: job.title,
+      language: language || 'English',
+      tone: tone || 'conversational'
     })
 
     const content = await aiService.complete(prompt)

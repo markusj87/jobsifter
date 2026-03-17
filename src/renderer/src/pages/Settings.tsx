@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../components/Toast'
 import type { AIProvider } from '../../../shared/types'
-import { SettingsIcon, TrashIcon, DownloadIcon, UploadIcon } from '../components/icons'
+import { SettingsIcon, TrashIcon, DownloadIcon, UploadIcon, GlobeIcon } from '../components/icons'
 import Dialog from '../components/Dialog'
 
 export default function Settings() {
@@ -10,6 +10,7 @@ export default function Settings() {
   const [aiModel, setAiModel] = useState('')
   const [models, setModels] = useState<{ id: string; name: string; inputPricePerMTok: number; outputPricePerMTok: number }[]>([])
   const [scanDelay, setScanDelay] = useState('3')
+  const [aiLanguage, setAiLanguage] = useState('English')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -24,6 +25,7 @@ export default function Settings() {
         if (s.apiKey) setApiKey(s.apiKey)
         if (s.aiModel) setAiModel(s.aiModel)
         if (s.scanDelay) setScanDelay(s.scanDelay)
+        if (s.aiLanguage) setAiLanguage(s.aiLanguage)
       }
     })
   }, [])
@@ -44,6 +46,7 @@ export default function Settings() {
       await window.api.settings.set('apiKey', apiKey)
       await window.api.settings.set('aiModel', aiModel)
       await window.api.settings.set('scanDelay', scanDelay)
+      await window.api.settings.set('aiLanguage', aiLanguage)
       setSaved(true)
       showToast('Settings saved successfully.', 'success')
       setTimeout(() => setSaved(false), 2000)
@@ -92,6 +95,8 @@ export default function Settings() {
               >
                 <option value="claude">Claude (Anthropic)</option>
                 <option value="openai">OpenAI</option>
+                <option value="gemini">Gemini (Google)</option>
+                <option value="mistral">Mistral AI</option>
               </select>
             </div>
             <div>
@@ -104,19 +109,17 @@ export default function Settings() {
                 className="apple-input"
               />
               <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', marginTop: '6px', lineHeight: 1.6 }}>
-                Your key is stored locally and never sent anywhere except {apiProvider === 'claude' ? 'Anthropic' : 'OpenAI'}.
+                Your key is stored locally and never sent anywhere except {{ claude: 'Anthropic', openai: 'OpenAI', gemini: 'Google', mistral: 'Mistral', none: '' }[apiProvider]}.
                 <br />
                 <a
-                  href={apiProvider === 'claude'
-                    ? 'https://www.google.com/search?q=how+to+get+a+claude+api+key'
-                    : 'https://www.google.com/search?q=how+to+get+a+openai+api+key'}
+                  href={`https://www.google.com/search?q=how+to+get+a+${{ claude: 'claude', openai: 'openai', gemini: 'gemini', mistral: 'mistral', none: '' }[apiProvider]}+api+key`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 500 }}
                   onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline' }}
                   onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none' }}
                 >
-                  How to get {apiProvider === 'claude' ? 'a Claude' : 'an OpenAI'} API key?
+                  How to get {{ claude: 'a Claude', openai: 'an OpenAI', gemini: 'a Gemini', mistral: 'a Mistral', none: 'an' }[apiProvider]} API key?
                 </a>
               </p>
             </div>
@@ -192,6 +195,38 @@ export default function Settings() {
             />
             <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', marginTop: '6px' }}>
               Longer delays reduce risk of LinkedIn rate limiting.
+            </p>
+          </div>
+        </div>
+
+        {/* AI Language */}
+        <div className="glass-card-solid" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--color-purple-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GlobeIcon size={16} className="text-[var(--color-purple)]" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>AI Language</h3>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+              Response language
+            </label>
+            <select
+              value={aiLanguage}
+              onChange={(e) => setAiLanguage(e.target.value)}
+              className="apple-select"
+              style={{ width: '100%' }}
+            >
+              <option value="English">English</option>
+              <option value="Swedish">Svenska</option>
+              <option value="Norwegian">Norsk</option>
+              <option value="Finnish">Suomi</option>
+              <option value="Danish">Dansk</option>
+              <option value="German">Deutsch</option>
+              <option value="Spanish">Español</option>
+            </select>
+            <p style={{ fontSize: '12px', color: 'var(--color-text-quaternary)', marginTop: '6px', lineHeight: 1.5 }}>
+              Controls the language for AI-generated content such as CV summaries, job match analysis, and CV feedback. This does not affect cover letters — you choose the language each time you generate one.
             </p>
           </div>
         </div>

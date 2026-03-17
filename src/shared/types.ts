@@ -79,4 +79,4 @@ export interface CvFeedback {
   createdAt: string
 }
 
-export type AIProvider = 'claude' | 'openai' | 'none'
+export type AIProvider = 'claude' | 'openai' | 'gemini' | 'mistral' | 'none'

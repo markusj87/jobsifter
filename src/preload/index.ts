@@ -97,8 +97,8 @@ const api = {
     delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.COVER_LETTERS_DELETE, id),
     exportPdf: (id: number): Promise<string | null> =>
       ipcRenderer.invoke(IPC_CHANNELS.COVER_LETTERS_EXPORT_PDF, id),
-    generate: (jobId: number): Promise<CoverLetter> =>
-      ipcRenderer.invoke(IPC_CHANNELS.AI_GENERATE_COVER_LETTER, jobId)
+    generate: (jobId: number, language?: string, tone?: string): Promise<CoverLetter> =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_GENERATE_COVER_LETTER, jobId, language, tone)
   }
 }
 

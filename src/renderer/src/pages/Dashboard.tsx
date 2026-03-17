@@ -204,7 +204,7 @@ export default function Dashboard() {
                   className="text-[14px]"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
-                  Connect an AI provider (Claude or OpenAI) in{' '}
+                  Connect an AI provider (Claude, OpenAI, Gemini, or Mistral) in{' '}
                   <button
                     onClick={() => navigate('/settings')}
                     className="font-medium underline underline-offset-2 transition-colors hover:opacity-70"

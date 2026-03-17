@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Job } from '../../../shared/types'
 import { ChevronLeftIcon, ExternalLinkIcon, BookmarkIcon, BookmarkFilledIcon, SparkleIcon } from '../components/icons'
+import Dialog from '../components/Dialog'
 import { scoreStyle } from '../utils/score-style'
 
 export default function JobDetail() {
@@ -11,6 +12,9 @@ export default function JobDetail() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [scoring, setScoring] = useState(false)
+  const [showCoverLetterDialog, setShowCoverLetterDialog] = useState(false)
+  const [coverLetterLanguage, setCoverLetterLanguage] = useState('English')
+  const [coverLetterTone, setCoverLetterTone] = useState('conversational')
 
   useEffect(() => {
     if (!id) return
@@ -45,9 +49,10 @@ export default function JobDetail() {
 
   const handleGenerateCoverLetter = async () => {
     if (!job) return
+    setShowCoverLetterDialog(false)
     setGenerating(true)
     try {
-      const result = await window.api.coverLetters.generate(job.id)
+      const result = await window.api.coverLetters.generate(job.id, coverLetterLanguage, coverLetterTone)
       if (result) navigate('/cover-letters')
     } finally {
       setGenerating(false)
@@ -110,7 +115,7 @@ export default function JobDetail() {
                 {scoring ? <><span>Scoring</span><span className="bounce-dots"><span>.</span><span>.</span><span>.</span></span></> : job.matchScore !== null ? 'Scored' : 'Score'}
               </button>
               <button
-                onClick={handleGenerateCoverLetter}
+                onClick={() => setShowCoverLetterDialog(true)}
                 disabled={generating}
                 className="pill-button"
                 style={{
@@ -210,6 +215,68 @@ export default function JobDetail() {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={showCoverLetterDialog}
+        onClose={() => setShowCoverLetterDialog(false)}
+        title="Cover Letter Options"
+        description="Choose a language and tone for the generated cover letter."
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Language</label>
+            <select
+              value={coverLetterLanguage}
+              onChange={(e) => setCoverLetterLanguage(e.target.value)}
+              className="apple-select"
+              style={{ width: '100%', fontSize: '13px' }}
+            >
+              <option value="English">English</option>
+              <option value="Swedish">Svenska</option>
+              <option value="Norwegian">Norsk</option>
+              <option value="Finnish">Suomi</option>
+              <option value="Danish">Dansk</option>
+              <option value="German">Deutsch</option>
+              <option value="Spanish">Español</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Tone</label>
+            <select
+              value={coverLetterTone}
+              onChange={(e) => setCoverLetterTone(e.target.value)}
+              className="apple-select"
+              style={{ width: '100%', fontSize: '13px' }}
+            >
+              <option value="professional">Professional</option>
+              <option value="conversational">Conversational</option>
+              <option value="enthusiastic">Enthusiastic</option>
+              <option value="confident">Confident</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleGenerateCoverLetter}
+            className="pill-button"
+            style={{
+              fontSize: '14px', padding: '10px 24px', gap: '6px', flex: 1,
+              background: 'var(--color-purple-soft)', color: 'var(--color-purple)',
+              border: '1px solid rgba(175, 82, 222, 0.15)'
+            }}
+          >
+            <SparkleIcon size={15} />
+            Generate
+          </button>
+          <button
+            onClick={() => setShowCoverLetterDialog(false)}
+            className="pill-button pill-button-secondary"
+            style={{ fontSize: '14px', padding: '10px 20px' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </Dialog>
     </div>
   )
 }
